@@ -4,12 +4,11 @@ from datetime import datetime
 
 
 class CampaignTrack:
-    def __init__(self, territory_id, player_id, track_id, multimodal_id, campaign_id, campaign_type, 
+    def __init__(self, territory_id, player_id, track_id, campaign_id, campaign_type, 
                  start_time, end_time, mode, validation_result, distance, duration):
         self.territory_id = territory_id
         self.player_id = player_id
         self.track_id = track_id
-        self.multimodal_id = multimodal_id
         self.campaign_id = campaign_id
         self.campaign_type = campaign_type
         self.start_time = start_time
@@ -82,7 +81,6 @@ class PlayAndGoEngine:
                     territory_id=territory_id,
                     player_id=track["playerId"],
                     track_id=track["trackedInstanceId"],
-                    multimodal_id=track["multimodalId"],
                     campaign_id=campaign_id,
                     campaign_type=campaign["type"],
                     start_time=track["startTime"],

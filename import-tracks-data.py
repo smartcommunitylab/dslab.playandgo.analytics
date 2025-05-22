@@ -12,7 +12,7 @@ if __name__ == "__main__":
 
     # Itera sui dati e processali con Valhalla
     nearest_edges = []
-    for track in playandgo_engine.getTracks(territoryId, startTime):
+    for track in playandgo_engine.get_tracks(territoryId, startTime):
         track_id = track["_id"]
         for edge_info in valhalla_engine.find_nearest_edges(track, track_id):
             if not edge_info in nearest_edges:

@@ -24,10 +24,13 @@ class EndgeInfo:
 
 
 class TraceInfo:
-    def __init__(self, edge_index, distance_from_trace_point, distance_along_edge, way_id=None, travel_mode=None):
+    def __init__(self, edge_index, distance_from_trace_point, distance_along_edge, 
+                 lon, lat, way_id=None, travel_mode=None):
         self.edge_index = edge_index
         self.distance_from_trace_point = distance_from_trace_point
         self.distance_along_edge = distance_along_edge
+        self.lon = lon
+        self.lat = lat
         self.way_id = way_id
         self.travel_mode = travel_mode
 
@@ -129,7 +132,7 @@ class ValhallaEngine:
                                 if not endge_info_obj in nearest_edges:
                                     nearest_edges.append(endge_info_obj)
             else:
-                print(f"Errore[{track_id}]: {response.status_code}")
+                print(f"Errore[{track_id}]: {response.status_code} - {response.text}")
         stop = datetime.now()
         print(f"{datetime.isoformat(datetime.now())} Track ID: {track_id}, Edges: {len(nearest_edges)}, Time:{(stop - start).total_seconds()} seconds")
         return nearest_edges
@@ -164,6 +167,8 @@ class ValhallaEngine:
                             edge_index=edge_index,
                             distance_from_trace_point=matched_point["distance_from_trace_point"],
                             distance_along_edge=matched_point["distance_along_edge"],
+                            lon=matched_point["lon"],
+                            lat=matched_point["lat"],
                             way_id=data_edges[edge_index]["way_id"],
                             travel_mode=data_edges[edge_index]["travel_mode"]
                         )

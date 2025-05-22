@@ -1,0 +1,16 @@
+{
+    "verbose":true,
+	"locations": [
+        {% for point in points %}
+		{
+			"lat": {{ point.latitude }},
+            "lon": {{ point.longitude }},
+            {% if loop.first or loop.last %}"type": "break"
+            {% else %}"type": "via"{% endif %}
+		}{% if not loop.last %},{% endif %}
+        {% endfor %}
+	],
+	"costing": "{{ costing }}",
+	"shape_match": "map_snap",
+    "trace_options": {"search_radius": 25}
+}

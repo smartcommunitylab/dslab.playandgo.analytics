@@ -1,10 +1,10 @@
 {
-    "verbose":true,
-	"locations": [
+	"shape": [
         {% for point in points %}
 		{
 			"lat": {{ point.latitude }},
             "lon": {{ point.longitude }},
+            "time": {{ point.time }},
             {% if loop.first or loop.last %}"type": "break"
             {% else %}"type": "via"{% endif %}
 		}{% if not loop.last %},{% endif %}
@@ -12,5 +12,6 @@
 	],
 	"costing": "{{ costing }}",
 	"shape_match": "map_snap",
+    "use_timestamps": true,
     "trace_options": {"search_radius": 5}
 }

@@ -4,11 +4,12 @@ from datetime import datetime
 
 
 class CampaignTrack:
-    def __init__(self, territory_id, player_id, track_id, campaign_id, campaign_type, 
+    def __init__(self, territory_id, player_id, track_id, multimodal_id, campaign_id, campaign_type, 
                  start_time, end_time, mode, validation_result, distance, duration):
         self.territory_id = territory_id
         self.player_id = player_id
         self.track_id = track_id
+        self.multimodal_id = multimodal_id
         self.campaign_id = campaign_id
         self.campaign_type = campaign_type
         self.start_time = start_time
@@ -77,16 +78,18 @@ class PlayAndGoEngine:
             campaign_id = track["campaignId"]
             if campaign_id in campaign_map:
                 campaign = campaign_map[campaign_id]
-                ctrack = CampaignTrack()
-                ctrack.territory_id = territory_id
-                ctrack.campaign_id = campaign_id
-                ctrack.player_id = track["playerId"]
-                ctrack.track_id = track["trackedInstanceId"]
-                ctrack.start_time = track["startTime"]
-                ctrack.end_time = track["endTime"]
-                ctrack.mode = track["modeType"]
-                ctrack.validation_result = track["valid"]
-                ctrack.distance = track["distance"]
-                ctrack.duration = track["duration"]
-                ctrack.campaign_type = campaign["type"]
-                yield ctrack
+                c_track = CampaignTrack(
+                    territory_id=territory_id,
+                    player_id=track["playerId"],
+                    track_id=track["trackedInstanceId"],
+                    multimodal_id=track["multimodalId"],
+                    campaign_id=campaign_id,
+                    campaign_type=campaign["type"],
+                    start_time=track["startTime"],
+                    end_time=track["endTime"],
+                    mode=track["modeType"],
+                    validation_result=track["valid"],
+                    distance=track["distance"],
+                    duration=track["duration"]
+                )
+                yield c_track

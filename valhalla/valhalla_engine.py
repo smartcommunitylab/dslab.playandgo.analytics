@@ -23,6 +23,28 @@ class EndgeInfo:
         return f"EdgeInfo(way_id={self.way_id}, shape={self.shape})"
 
 
+class TraceInfo:
+    def __init__(self, edge_index, distance_from_trace_point, distance_along_edge, way_id=None, travel_mode=None):
+        self.edge_index = edge_index
+        self.distance_from_trace_point = distance_from_trace_point
+        self.distance_along_edge = distance_along_edge
+        self.way_id = way_id
+        self.travel_mode = travel_mode
+
+    def __repr__(self):
+        return f"TraceInfo(edge_index={self.edge_index}, way_id={self.way_id}, travel_mode={self.travel_mode})"
+
+
+class TraceRoute:
+    def __init__(self, track_id:str, shape:str=None, trace_infos:list[TraceInfo]=[]):
+        self.track_id = track_id
+        self.shape = shape
+        self.trace_infos = trace_infos
+
+    def __repr__(self):
+        return f"TraceRoute(track_id={self.track_id})"
+    
+
 def get_transit_mode(track):
     """
     Get the transit mode from the track.
@@ -32,9 +54,9 @@ def get_transit_mode(track):
             mode = track["freeTrackingTransport"]
             match mode:
                 case "bus":
-                    return "multimodal"
+                    return "auto"
                 case "train":
-                    return "multimodal"
+                    return "auto"
                 case "bike":
                     return "bicycle"
                 case "walk":
@@ -56,8 +78,9 @@ def convert_tracked_instance_to_points(track):
             point_new = {
                 "longitude": point["longitude"],
                 "latitude": point["latitude"],
-                "recorded_at": point["recorded_at"]
-            }
+                "recorded_at": point["recorded_at"],
+                "time": int(point["recorded_at"].timestamp())
+            }   
             points.append(point_new)
     return points
 
@@ -72,13 +95,14 @@ class ValhallaEngine:
         with open("data/valhalla_locate_template.txt", "r", encoding="utf-8") as f:
             template_content = f.read()
         # Crea il template Jinja2
-        self.template = Template(template_content)
-        self.valhalla_uri = os.getenv("VALHALLA_LOCATE_URI", "http://localhost:8002/locate")
+        self.template_locate = Template(template_content)
+        with open("data/valhalla_trace_attributes_template.txt", "r", encoding="utf-8") as f:
+            template_content = f.read()
+        self.template_trace_attribuutes = Template(template_content)
+        self.valhalla_uri = os.getenv("VALHALLA_URI", "http://localhost:8002/locate").rstrip("/")
+        
 
-
-
-
-    def find_nearest_edges(self, track, track_id) -> list[EndgeInfo]:
+    def find_nearest_edges_by_locate(self, track, track_id) -> list[EndgeInfo]:
         """
         Find the nearest edges in the graph for the given points.
         """
@@ -88,11 +112,11 @@ class ValhallaEngine:
         print(f"{datetime.isoformat(datetime.now())} Track ID: {track_id}, Points: {len(points)}")
         if len(points) > 0:
             # Sostituisci i valori
-            rendered = self.template.render(costing=get_transit_mode(track), points=points)
+            rendered = self.template_locate.render(costing=get_transit_mode(track), points=points)
             # Convertilo in oggetto Python se serve
             data_points = json.loads(rendered)
             # Invio della richiesta POST con il body in JSON
-            response = requests.post(self.valhalla_uri, json=data_points)
+            response = requests.post(self.valhalla_uri + "/locate", json=data_points)
             if response.status_code == 200:
                 # Parsare la risposta JSON in un dizionario Python
                 data_locate = response.json()
@@ -109,3 +133,46 @@ class ValhallaEngine:
         stop = datetime.now()
         print(f"{datetime.isoformat(datetime.now())} Track ID: {track_id}, Edges: {len(nearest_edges)}, Time:{(stop - start).total_seconds()} seconds")
         return nearest_edges
+
+
+    def find_nearest_edges_by_trace(self, track, track_id) -> TraceRoute:
+        """
+        Find the nearest edges in the graph for the given points.
+        """
+        trace_route = TraceRoute(track_id=track_id)
+        start = datetime.now()
+        points = convert_tracked_instance_to_points(track)
+        sorted_points = sorted(points, key=lambda x: x["time"])
+        print(f"{datetime.isoformat(datetime.now())} Track ID: {track_id}, Points: {len(points)}")
+        if len(points) > 0:
+            # Sostituisci i valori
+            rendered = self.template_trace_attribuutes.render(costing=get_transit_mode(track), points=sorted_points)
+            # Convertilo in oggetto Python se serve
+            data_points = json.loads(rendered)
+            # Invio della richiesta POST con il body in JSON
+            response = requests.post(self.valhalla_uri + "/trace_attributes", json=data_points)
+            if response.status_code == 200:
+                # Parsare la risposta JSON in un dizionario Python
+                data_trace = response.json()
+                trace_route.shape = data_trace["shape"]
+                trace_infos = []
+                data_edges = data_trace["edges"]
+                for matched_point in data_trace["matched_points"]:
+                    if matched_point["type"] == "matched":
+                        edge_index = matched_point["edge_index"]
+                        trace_info = TraceInfo(
+                            edge_index=edge_index,
+                            distance_from_trace_point=matched_point["distance_from_trace_point"],
+                            distance_along_edge=matched_point["distance_along_edge"],
+                            way_id=data_edges[edge_index]["way_id"],
+                            travel_mode=data_edges[edge_index]["travel_mode"]
+                        )
+                        #TODO some logic about travel_mode or distances 
+                        trace_infos.append(trace_info)
+                trace_route.trace_infos = trace_infos
+            else:
+                print(f"Errore[{track_id}]: {response.status_code} - {response.text}")
+        stop = datetime.now()
+        print(f"{datetime.isoformat(datetime.now())} Track ID: {track_id}, Edges: {len(trace_route.trace_infos)}, Time:{(stop - start).total_seconds()} seconds")
+        return trace_route
+

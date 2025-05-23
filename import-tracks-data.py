@@ -66,7 +66,7 @@ def import_nearest_edges_by_trace(territory_id, start_time, end_time=None):
 
     rows, columns = df_nearest_edges.shape
     print(f"Imported Nearest Edges Rows: {rows}, Columns: {columns}")
-    file_storage.merge_nearest_edges(territory_id, df_nearest_edges)
+    file_storage.merge_nearest_edges(territory_id, df_nearest_edges, True)
 
 
 def import_campaign_tracks_data(territory_id, start_time):

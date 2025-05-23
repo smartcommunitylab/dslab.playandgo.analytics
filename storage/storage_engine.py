@@ -47,7 +47,7 @@ class FileStorage:
         file_path = self.store_path + "/" + territory_id + "/nearest_edges.parquet"
         if os.path.exists(file_path):
             existing_df = pd.read_parquet(file_path, engine="pyarrow")
-            combined_df = self.merge_dataframes(existing_df, df, ['track_id', 'way_id'])
+            combined_df = self.merge_dataframes(existing_df, df, ['track_id', 'way_id', 'lat', 'lon'])
             combined_df.to_parquet(file_path, engine="pyarrow") 
         else:   
             df.to_parquet(file_path, engine="pyarrow")                   

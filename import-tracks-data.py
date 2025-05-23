@@ -26,9 +26,10 @@ def import_nearest_edges_by_trace(territory_id, start_time, end_time=None):
 
     way_shape_map = {}
 
+    df_way_shapes = pd.DataFrame(columns=['way_id', 'shape'])
     df_tracks = pd.DataFrame(columns=['track_id', 'shape'])
     df_nearest_edges = pd.DataFrame(columns=['track_id', 'way_id', 'travel_mode', 'lon', 'lat',
-                                             'distance_from_trace_point', 'distance_along_edge', 'shape'])
+                                             'distance_from_trace_point', 'distance_along_edge'])
     for track in playandgo_engine.get_tracks(territory_id, start_time, end_time):
         track_id = str(track["_id"])
         trace_route = valhalla_engine.find_nearest_edges_by_trace(track, track_id) 
@@ -46,23 +47,29 @@ def import_nearest_edges_by_trace(territory_id, start_time, end_time=None):
                                                                               trace_info.lon, trace_info.lat)
                     if edge_info is not None:
                         way_shape_map[trace_info.way_id] = edge_info.shape
+                        if df_way_shapes.empty:
+                            df_way_shapes.loc[0] = [edge_info.way_id, edge_info.shape]
+                        else:
+                            df_way_shapes.loc[df_way_shapes.index.max() + 1] = [edge_info.way_id, edge_info.shape]
                     else:
                         way_shape_map[trace_info.way_id] = None
 
-                trace_info.shape = way_shape_map[trace_info.way_id]        
                 if df_nearest_edges.empty:
                     df_nearest_edges.loc[0] = [track_id, trace_info.way_id, trace_info.travel_mode, 
                                                 trace_info.lon, trace_info.lat, trace_info.distance_from_trace_point, 
-                                                trace_info.distance_along_edge, trace_info.shape]
+                                                trace_info.distance_along_edge]
                 else:
                     df_nearest_edges.loc[df_nearest_edges.index.max() + 1] = [track_id, trace_info.way_id, 
                                                 trace_info.travel_mode, trace_info.lon, trace_info.lat, 
-                                                trace_info.distance_from_trace_point, trace_info.distance_along_edge, 
-                                                trace_info.shape]
+                                                trace_info.distance_from_trace_point, trace_info.distance_along_edge]
                     
     rows, columns = df_tracks.shape
     print(f"Imported Tracks Rows: {rows}, Columns: {columns}")
-    file_storage.merge_tracks(territory_id, df_tracks)
+    file_storage.merge_tracks(territory_id, df_tracks, True)
+
+    rows, columns = df_way_shapes.shape
+    print(f"Imported Way Shapes Rows: {rows}, Columns: {columns}")
+    file_storage.merge_way_shapes(territory_id, df_way_shapes, True)
 
     rows, columns = df_nearest_edges.shape
     print(f"Imported Nearest Edges Rows: {rows}, Columns: {columns}")

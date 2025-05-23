@@ -6,12 +6,12 @@ from valhalla.valhalla_engine import ValhallaEngine
 from storage.storage_engine import FileStorage
 
 
-def import_nearest_edges_by_locate(territory_id, start_time):
+def import_nearest_edges_by_locate(territory_id, start_time, end_time=None):
     playandgo_engine = PlayAndGoEngine()
     valhalla_engine = ValhallaEngine()
 
     nearest_edges = []
-    for track in playandgo_engine.get_tracks(territory_id, start_time):
+    for track in playandgo_engine.get_tracks(territory_id, start_time, end_time):
         track_id = str(track["_id"])
         for edge_info in valhalla_engine.find_nearest_edges_by_locate(track, track_id):
             if not edge_info in nearest_edges:
@@ -19,7 +19,7 @@ def import_nearest_edges_by_locate(territory_id, start_time):
     print(f"Found {len(nearest_edges)} unique edges.")
 
 
-def import_nearest_edges_by_trace(territory_id, start_time):
+def import_nearest_edges_by_trace(territory_id, start_time, end_time=None):
     playandgo_engine = PlayAndGoEngine()
     valhalla_engine = ValhallaEngine()
     file_storage = FileStorage()
@@ -27,7 +27,7 @@ def import_nearest_edges_by_trace(territory_id, start_time):
     df_tracks = pd.DataFrame(columns=['track_id', 'shape'])
     df_nearest_edges = pd.DataFrame(columns=['track_id', 'way_id', 'travel_mode', 'lon', 'lat',
                                              'distance_from_trace_point', 'distance_along_edge', 'shape'])
-    for track in playandgo_engine.get_tracks(territory_id, start_time):
+    for track in playandgo_engine.get_tracks(territory_id, start_time, end_time):
         track_id = str(track["_id"])
         trace_route = valhalla_engine.find_nearest_edges_by_trace(track, track_id) 
         
@@ -79,7 +79,8 @@ def import_campaign_tracks_data(territory_id, start_time):
 
 if __name__ == "__main__":
     start_time = "2025-03-01T00:00:00+00:00"
+    end_time = "2025-05-30T23:59:59+00:00"
 
     #import_campaign_tracks_data("TAA", start_time)
     #import_nearest_edges_by_locate("TN", start_time)
-    import_nearest_edges_by_trace("TN", start_time)
+    import_nearest_edges_by_trace("TN", start_time, end_time)

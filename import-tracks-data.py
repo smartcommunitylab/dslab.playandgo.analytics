@@ -25,6 +25,8 @@ def import_nearest_edges_by_trace(territory_id, start_time):
     file_storage = FileStorage()
 
     df_tracks = pd.DataFrame(columns=['track_id', 'shape'])
+    df_nearest_edges = pd.DataFrame(columns=['track_id', 'way_id', 'travel_mode', 'lon', 'lat',
+                                             'distance_from_trace_point', 'distance_along_edge', 'shape'])
     for track in playandgo_engine.get_tracks(territory_id, start_time):
         track_id = str(track["_id"])
         trace_route = valhalla_engine.find_nearest_edges_by_trace(track, track_id) 
@@ -33,16 +35,27 @@ def import_nearest_edges_by_trace(territory_id, start_time):
             df_tracks.loc[0] = [track_id, trace_route.shape]
         else:
             df_tracks.loc[df_tracks.index.max() + 1] = [track_id, trace_route.shape]
-
+        
+        if len(trace_route.trace_infos) > 0:
+            for trace_info in trace_route.trace_infos:
+                if df_nearest_edges.empty:
+                    df_nearest_edges.loc[0] = [track_id, trace_info.way_id, trace_info.travel_mode,
+                                                trace_info.lon, trace_info.lat, trace_info.distance_from_trace_point, 
+                                                trace_info.distance_along_edge, trace_route.shape]
+                else:
+                    df_nearest_edges.loc[df_nearest_edges.index.max() + 1] = [track_id, trace_info.way_id, 
+                                                trace_info.travel_mode, trace_info.lon, trace_info.lat, 
+                                                trace_info.distance_from_trace_point, trace_info.distance_along_edge, 
+                                                trace_route.shape]
+                    
     rows, columns = df_tracks.shape
-    print(f"Imported Rows: {rows}, Columns: {columns}")
+    print(f"Imported Tracks Rows: {rows}, Columns: {columns}")
     file_storage.merge_tracks(territory_id, df_tracks)
 
-"""         for trace_info in trace_route.trace_infos:
-            if not trace_info.way_id in nearest_edges:
-                nearest_edges.append(trace_info.way_id)
-        print(f"Found {len(nearest_edges)} unique edges.")
- """
+    rows, columns = df_nearest_edges.shape
+    print(f"Imported Nearest Edges Rows: {rows}, Columns: {columns}")
+    file_storage.merge_nearest_edges(territory_id, df_nearest_edges)
+
 
 def import_campaign_tracks_data(territory_id, start_time):
     # Inizializza gli engine

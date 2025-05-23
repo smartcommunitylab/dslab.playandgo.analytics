@@ -26,6 +26,7 @@ class FileStorage:
             rows, columns = df.shape
             print(f"Storage Rows: {rows}, Columns: {columns}")
 
+
     def merge_tracks(self, territory_id:str, df:pd.DataFrame):
         """Merge data to a file."""
         self.check_directory(territory_id)
@@ -33,6 +34,20 @@ class FileStorage:
         if os.path.exists(file_path):
             existing_df = pd.read_parquet(file_path, engine="pyarrow")
             combined_df = self.merge_dataframes(existing_df, df, ['track_id'])
+            combined_df.to_parquet(file_path, engine="pyarrow") 
+        else:   
+            df.to_parquet(file_path, engine="pyarrow")                   
+            rows, columns = df.shape
+            print(f"Storage Rows: {rows}, Columns: {columns}")
+
+
+    def merge_nearest_edges(self, territory_id:str, df:pd.DataFrame):
+        """Merge data to a file."""
+        self.check_directory(territory_id)
+        file_path = self.store_path + "/" + territory_id + "/nearest_edges.parquet"
+        if os.path.exists(file_path):
+            existing_df = pd.read_parquet(file_path, engine="pyarrow")
+            combined_df = self.merge_dataframes(existing_df, df, ['track_id', 'way_id'])
             combined_df.to_parquet(file_path, engine="pyarrow") 
         else:   
             df.to_parquet(file_path, engine="pyarrow")                   

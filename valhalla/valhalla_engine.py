@@ -25,7 +25,7 @@ class EndgeInfo:
 
 class TraceInfo:
     def __init__(self, edge_index, distance_from_trace_point, distance_along_edge, 
-                 lon, lat, way_id=None, travel_mode=None):
+                 lon, lat, way_id=None, travel_mode=None, shape=None):
         self.edge_index = edge_index
         self.distance_from_trace_point = distance_from_trace_point
         self.distance_along_edge = distance_along_edge
@@ -33,6 +33,7 @@ class TraceInfo:
         self.lat = lat
         self.way_id = way_id
         self.travel_mode = travel_mode
+        self.shape = shape
 
     def __repr__(self):
         return f"TraceInfo(edge_index={self.edge_index}, way_id={self.way_id}, travel_mode={self.travel_mode})"

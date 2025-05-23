@@ -30,7 +30,7 @@ class PlayAndGoEngine:
         self.mongo_db = os.getenv("PG_MONGO_DB", "playngo-engine")
 
 
-    def get_tracks(self, territory_id: str, start_time: str):
+    def get_tracks(self, territory_id: str, start_time: str, end_time: str = None):
         # Connessione al server MongoDB (modifica la stringa di connessione se necessario)
         client = MongoClient(self.mongo_uri)
 
@@ -42,7 +42,11 @@ class PlayAndGoEngine:
 
         # Ottieni un cursore per tutti i documenti della collection
         start_time_dt = datetime.fromisoformat(start_time)
-        cursor = collection.find({"territoryId":territory_id, "startTime":{"$gt":start_time_dt}})
+        if end_time is not None:
+            end_time_dt = datetime.fromisoformat(end_time)
+            cursor = collection.find({"territoryId":territory_id, "startTime":{"$gt":start_time_dt, "$lt":end_time_dt}})
+        else:
+            cursor = collection.find({"territoryId":territory_id, "startTime":{"$gt":start_time_dt}})
 
         # Itera sui documenti
         for track in cursor:
@@ -51,7 +55,7 @@ class PlayAndGoEngine:
                 yield track
 
 
-    def get_campaign_tracks(self, territory_id: str, start_time: str):
+    def get_campaign_tracks(self, territory_id: str, start_time: str, end_time: str = None):
         # Connessione al server MongoDB (modifica la stringa di connessione se necessario)
         client = MongoClient(self.mongo_uri)
 
@@ -70,7 +74,11 @@ class PlayAndGoEngine:
 
         # Ottieni un cursore per tutti i documenti della collection
         start_time_dt = datetime.fromisoformat(start_time)
-        cursor = collection.find({"territoryId":territory_id, "startTime":{"$gt":start_time_dt}})
+        if end_time is not None:
+            end_time_dt = datetime.fromisoformat(end_time)
+            cursor = collection.find({"territoryId":territory_id, "startTime":{"$gt":start_time_dt, "$lt":end_time_dt}})
+        else:
+            cursor = collection.find({"territoryId":territory_id, "startTime":{"$gt":start_time_dt}})
 
         # Itera sui documenti
         for track in cursor:

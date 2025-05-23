@@ -106,6 +106,35 @@ class ValhallaEngine:
         self.valhalla_uri = os.getenv("VALHALLA_URI", "http://localhost:8002/locate").rstrip("/")
         
 
+    def find_nearest_edges_by_osm_way(self, track, way_id, lon, lat) -> EndgeInfo:
+        """
+        Find the nearest edges in the graph for the given points.
+        """
+        point_new = {
+            "longitude": lon,
+            "latitude": lat
+        }   
+        rendered = self.template_locate.render(costing=get_transit_mode(track), points=[point_new])
+        # Convertilo in oggetto Python se serve
+        data_points = json.loads(rendered)
+        # Invio della richiesta POST con il body in JSON
+        response = requests.post(self.valhalla_uri + "/locate", json=data_points)
+        if response.status_code == 200:
+            # Parsare la risposta JSON in un dizionario Python
+            data_locate = response.json()
+            for track_element in data_locate:
+                if "edges" in track_element and track_element["edges"] is not None:
+                    for edge in track_element["edges"]:
+                        if "edge_info" in edge:
+                            edge_info = edge["edge_info"]
+                            if edge_info["way_id"] == way_id:
+                                endge_info_obj = EndgeInfo(edge_info["way_id"], edge_info["shape"])
+                                return endge_info_obj
+        else:
+            print(f"Errore: {response.status_code} - {response.text}")
+        return None
+    
+
     def find_nearest_edges_by_locate(self, track, track_id) -> list[EndgeInfo]:
         """
         Find the nearest edges in the graph for the given points.

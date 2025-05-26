@@ -21,7 +21,7 @@ def import_nearest_edges_by_locate(territory_id, start_time, end_time=None):
     print(f"Found {len(nearest_edges)} unique edges.")
 
 
-def import_nearest_edges_by_trace(territory_id, start_time, end_time=None):
+def import_nearest_edges_by_trace(territory_id, start_time, end_time=None, save_csv=False):
     playandgo_engine = PlayAndGoEngine()
     valhalla_engine = ValhallaEngine()
     file_storage = FileStorage()
@@ -64,18 +64,18 @@ def import_nearest_edges_by_trace(territory_id, start_time, end_time=None):
                     
     rows, columns = df_tracks.shape
     print(f"Imported Tracks Rows: {rows}, Columns: {columns}")
-    file_storage.merge_tracks(territory_id, df_tracks, True)
+    file_storage.merge_tracks(territory_id, df_tracks, save_csv)
 
     rows, columns = df_way_shapes.shape
     print(f"Imported Way Shapes Rows: {rows}, Columns: {columns}")
-    file_storage.merge_way_shapes(territory_id, df_way_shapes, True)
+    file_storage.merge_way_shapes(territory_id, df_way_shapes, save_csv)
 
     rows, columns = df_nearest_edges.shape
     print(f"Imported Nearest Edges Rows: {rows}, Columns: {columns}")
-    file_storage.merge_nearest_edges(territory_id, df_nearest_edges, True)
+    file_storage.merge_nearest_edges(territory_id, df_nearest_edges, save_csv)
 
 
-def import_campaign_tracks_data(territory_id, start_time, end_time=None):
+def import_campaign_tracks_data(territory_id, start_time, end_time=None, save_csv=False):
     # Inizializza gli engine
     playandgo_engine = PlayAndGoEngine()
     file_storage = FileStorage()
@@ -92,10 +92,10 @@ def import_campaign_tracks_data(territory_id, start_time, end_time=None):
     
     rows, columns = df.shape
     print(f"Imported Campaign Tracks Rows: {rows}, Columns: {columns}")
-    file_storage.merge_campaign_tracks(territory_id, df, True)
+    file_storage.merge_campaign_tracks(territory_id, df, save_csv)
 
 
-def import_campaign_subscriptions_data(territory_id, start_time, end_time=None):
+def import_campaign_subscriptions_data(territory_id, start_time, end_time=None, save_csv=False):
     # Inizializza gli engine
     playandgo_engine = PlayAndGoEngine()
     file_storage = FileStorage()
@@ -112,7 +112,7 @@ def import_campaign_subscriptions_data(territory_id, start_time, end_time=None):
     
     rows, columns = df.shape
     print(f"Imported Campaign Sybscriptions Rows: {rows}, Columns: {columns}")
-    file_storage.merge_campaign_subscriptions(territory_id, df, True)
+    file_storage.merge_campaign_subscriptions(territory_id, df, save_csv)
 
 
 app = Flask(__name__)
@@ -122,7 +122,8 @@ def api_import_campaign_tracks_data(territory_id):
     print(repr(request.args.get('start_time')))
     start_time = request.args.get('start_time', type=str)
     end_time = request.args.get('end_time', default=None, type=str)
-    import_campaign_tracks_data(territory_id, start_time, end_time)
+    save_csv = request.args.get('save_csv', default=False, type=bool)
+    import_campaign_tracks_data(territory_id, start_time, end_time, save_csv)
     return Response(status=200)
 
 
@@ -130,7 +131,8 @@ def api_import_campaign_tracks_data(territory_id):
 def api_import_campaign_subscriptions_data(territory_id):
     start_time = request.args.get('start_time', type=str)
     end_time = request.args.get('end_time', default=None, type=str)
-    import_campaign_subscriptions_data(territory_id, start_time)
+    save_csv = request.args.get('save_csv', default=False, type=bool)
+    import_campaign_subscriptions_data(territory_id, start_time, end_time, save_csv)
     return Response(status=200)
 
 
@@ -138,7 +140,8 @@ def api_import_campaign_subscriptions_data(territory_id):
 def api_import_nearest_edges_by_trace(territory_id):
     start_time = request.args.get('start_time', type=str)
     end_time = request.args.get('end_time', default=None, type=str)
-    import_nearest_edges_by_trace(territory_id, start_time, end_time)
+    save_csv = request.args.get('save_csv', default=False, type=bool)
+    import_nearest_edges_by_trace(territory_id, start_time, end_time, save_csv)
     return Response(status=200)
 
 

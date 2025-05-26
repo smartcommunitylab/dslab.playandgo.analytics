@@ -84,6 +84,7 @@ class PlayAndGoEngine:
             #get only valid docuemt
             if "validationResult" in track and "valid" in track["validationResult"] and track["validationResult"]["valid"] is True:
                 yield track
+        client.close()
 
 
     def get_campaign_tracks(self, territory_id: str, start_time: str, end_time: str = None):
@@ -130,6 +131,8 @@ class PlayAndGoEngine:
                     duration=track["duration"]
                 )
                 yield c_track
+        client.close()
+
 
     def get_campaign_subscriptions(self, territory_id: str, start_time: str, end_time: str = None):
         # Connessione al server MongoDB (modifica la stringa di connessione se necessario)
@@ -169,3 +172,4 @@ class PlayAndGoEngine:
                     groupId=get_group_id(subscription, campaign["type"])
                 )
                 yield c_subscription
+        client.close()

@@ -63,7 +63,7 @@ class PlayAndGoEngine:
 
     def get_tracks(self, territory_id: str, start_time: str, end_time: str = None):
         # Connessione al server MongoDB (modifica la stringa di connessione se necessario)
-        client = MongoClient(self.mongo_uri)
+        client = MongoClient(self.mongo_uri, directConnection=True)
 
         # Seleziona il database
         db = client[self.mongo_db]
@@ -88,7 +88,7 @@ class PlayAndGoEngine:
 
     def get_campaign_tracks(self, territory_id: str, start_time: str, end_time: str = None):
         # Connessione al server MongoDB (modifica la stringa di connessione se necessario)
-        client = MongoClient(self.mongo_uri)
+        client = MongoClient(self.mongo_uri, directConnection=True)
 
         # Seleziona il database
         db = client[self.mongo_db]
@@ -133,7 +133,7 @@ class PlayAndGoEngine:
 
     def get_campaign_subscriptions(self, territory_id: str, start_time: str, end_time: str = None):
         # Connessione al server MongoDB (modifica la stringa di connessione se necessario)
-        client = MongoClient(self.mongo_uri)
+        client = MongoClient(self.mongo_uri, directConnection=True)
 
         # Seleziona il database
         db = client[self.mongo_db]

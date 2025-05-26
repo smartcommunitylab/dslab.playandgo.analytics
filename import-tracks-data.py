@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 
+from flask import Flask, request, Response
+
 from playandgo.pg_engine import PlayAndGoEngine
 from valhalla.valhalla_engine import ValhallaEngine
 from storage.storage_engine import FileStorage
@@ -113,9 +115,38 @@ def import_campaign_subscriptions_data(territory_id, start_time, end_time=None):
     file_storage.merge_campaign_subscriptions(territory_id, df, True)
 
 
-if __name__ == "__main__":
-    start_time = "2025-05-01T00:00:00+00:00"
-    end_time = "2025-05-30T23:59:59+00:00"
+app = Flask(__name__)
+
+@app.route('/api/import/campaign-tracks/<territory_id>', methods=['GET'])
+def api_import_campaign_tracks_data(territory_id):
+    print(repr(request.args.get('start_time')))
+    start_time = request.args.get('start_time', type=str)
+    end_time = request.args.get('end_time', default=None, type=str)
+    import_campaign_tracks_data(territory_id, start_time, end_time)
+    return Response(status=200)
+
+
+@app.route('/api/import/campaign-subs/<territory_id>', methods=['GET'])
+def api_import_campaign_subscriptions_data(territory_id):
+    start_time = request.args.get('start_time', type=str)
+    end_time = request.args.get('end_time', default=None, type=str)
+    import_campaign_subscriptions_data(territory_id, start_time)
+    return Response(status=200)
+
+
+@app.route('/api/import/nearest-edges/<territory_id>', methods=['GET'])
+def api_import_nearest_edges_by_trace(territory_id):
+    start_time = request.args.get('start_time', type=str)
+    end_time = request.args.get('end_time', default=None, type=str)
+    import_nearest_edges_by_trace(territory_id, start_time, end_time)
+    return Response(status=200)
+
+
+if __name__ == "__main__":    
+    app.run(host='0.0.0.0', port=8078)
+
+    #start_time = "2025-05-01T00:00:00+00:00"
+    #end_time = "2025-05-30T23:59:59+00:00"
 
     #import_campaign_tracks_data("L", start_time)
     #import_campaign_subscriptions_data("L", start_time)

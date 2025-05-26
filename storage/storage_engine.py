@@ -103,10 +103,10 @@ class FileStorage:
                 self.save_csv(file_path, df)
 
 
-    def merge_dataframes(self, df1:pd.DataFrame, df2:pd.DataFrame, columns_sub) -> pd.DataFrame:
+    def merge_dataframes(self, df_old:pd.DataFrame, df_new:pd.DataFrame, columns_sub) -> pd.DataFrame:
         """Merge two dataframes."""
-        combined_df = pd.concat([df1, df2], ignore_index=True) \
-            .drop_duplicates(subset=columns_sub) \
+        combined_df = pd.concat([df_old, df_new], ignore_index=True) \
+            .drop_duplicates(subset=columns_sub, keep='last') \
             .reset_index(drop=True)
         rows, columns = combined_df.shape
         print(f"Storage Rows: {rows}, Columns: {columns}")

@@ -17,7 +17,8 @@ def get_group_id(subscription, campaign_type) -> str:
         if "campaignData" in subscription and subscription["campaignData"] is not None:
             if "teamId" in subscription["campaignData"]:
                 return subscription["campaignData"]["teamId"]
-    return None
+    else:
+        return 'null'
 
 
 class CampaignTrack:
@@ -99,7 +100,7 @@ class PlayAndGoEngine:
         campaign_cursor = campaign_collection.find({"territoryId":territory_id})
         campaign_map = {}
         for campaign in campaign_cursor:
-            campaign_map[campaign["_id"]] = campaign
+            campaign_map[str(campaign["_id"])] = campaign
 
         # Seleziona la collection
         collection = db["campaignPlayerTracks"]
@@ -146,7 +147,7 @@ class PlayAndGoEngine:
         campaign_cursor = campaign_collection.find({"territoryId":territory_id})
         campaign_map = {}
         for campaign in campaign_cursor:
-            campaign_map[campaign["_id"]] = campaign
+            campaign_map[str(campaign["_id"])] = campaign
 
         # Seleziona la collection
         collection = db["campaignSubscriptions"]
@@ -155,9 +156,9 @@ class PlayAndGoEngine:
         start_time_dt = datetime.fromisoformat(start_time)
         if end_time is not None:
             end_time_dt = datetime.fromisoformat(end_time)
-            cursor = collection.find({"territoryId":territory_id, "startTime":{"$gt":start_time_dt, "$lt":end_time_dt}})
+            cursor = collection.find({"territoryId":territory_id, "registrationDate":{"$gt":start_time_dt, "$lt":end_time_dt}})
         else:
-            cursor = collection.find({"territoryId":territory_id, "startTime":{"$gt":start_time_dt}})
+            cursor = collection.find({"territoryId":territory_id, "registrationDate":{"$gt":start_time_dt}})
 
         for subscription in cursor:
             campaign_id = subscription["campaignId"]
@@ -168,8 +169,8 @@ class PlayAndGoEngine:
                     player_id=subscription["playerId"],
                     campaign_id=campaign_id,
                     campaign_type=campaign["type"],
-                    registrationDate=subscription["registrationDate"],
-                    groupId=get_group_id(subscription, campaign["type"])
+                    registration_date=subscription["registrationDate"],
+                    group_id=get_group_id(subscription, campaign["type"])
                 )
                 yield c_subscription
         client.close()

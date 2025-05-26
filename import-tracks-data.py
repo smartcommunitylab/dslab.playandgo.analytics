@@ -76,7 +76,7 @@ def import_nearest_edges_by_trace(territory_id, start_time, end_time=None):
     file_storage.merge_nearest_edges(territory_id, df_nearest_edges, True)
 
 
-def import_campaign_tracks_data(territory_id, start_time):
+def import_campaign_tracks_data(territory_id, start_time, end_time=None):
     # Inizializza gli engine
     playandgo_engine = PlayAndGoEngine()
     file_storage = FileStorage()
@@ -84,7 +84,7 @@ def import_campaign_tracks_data(territory_id, start_time):
     # Ottieni i dati da PlayAndGo
     df = pd.DataFrame(columns=['territory_id', 'player_id', 'track_id', 'campaign_id', 'campaign_type', 
                                'start_time', 'end_time', 'mode', 'validation_result', 'distance', 'duration'])
-    for c_track in playandgo_engine.get_campaign_tracks(territory_id, start_time):
+    for c_track in playandgo_engine.get_campaign_tracks(territory_id, start_time, end_time):
         print(f"Campaign Track: {c_track}")
         if df.empty:
             df.loc[0] = vars(c_track)
@@ -93,7 +93,27 @@ def import_campaign_tracks_data(territory_id, start_time):
     
     rows, columns = df.shape
     print(f"Imported Rows: {rows}, Columns: {columns}")
-    file_storage.merge_campaign_tracks(territory_id, df)
+    file_storage.merge_campaign_tracks(territory_id, df, True)
+
+
+def import_campaign_subscriptions_data(territory_id, start_time, end_time=None):
+    # Inizializza gli engine
+    playandgo_engine = PlayAndGoEngine()
+    file_storage = FileStorage()
+
+    # Ottieni i dati da PlayAndGo
+    df = pd.DataFrame(columns=['territory_id', 'player_id', 'campaign_id', 'campaign_type', 
+                               'registration_date', 'group_id'])
+    for c_subscription in playandgo_engine.get_campaign_subscriptions(territory_id, start_time, end_time):
+        print(f"Campaign Subscription: {c_subscription}")
+        if df.empty:
+            df.loc[0] = vars(c_subscription)
+        else:
+            df.loc[df.index.max() + 1] = vars(c_subscription)
+    
+    rows, columns = df.shape
+    print(f"Imported Rows: {rows}, Columns: {columns}")
+    file_storage.merge_campaign_subscriptions(territory_id, df, True)
 
 
 if __name__ == "__main__":
@@ -101,5 +121,6 @@ if __name__ == "__main__":
     end_time = "2025-05-30T23:59:59+00:00"
 
     #import_campaign_tracks_data("TAA", start_time)
+    #import_campaign_subscriptions_data("TAA", start_time)
     #import_nearest_edges_by_locate("TN", start_time)
-    import_nearest_edges_by_trace("TN", start_time, end_time)
+    #import_nearest_edges_by_trace("TN", start_time, end_time)

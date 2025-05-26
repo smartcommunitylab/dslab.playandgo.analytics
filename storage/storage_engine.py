@@ -85,6 +85,24 @@ class FileStorage:
                 self.save_csv(file_path, df)
 
 
+    def merge_campaign_subscriptions(self, territory_id:str, df:pd.DataFrame, save_csv:bool=False):
+        """Merge data to a file."""
+        self.check_directory(territory_id)
+        file_path = self.store_path + "/" + territory_id + "/campaign_subscriptions.parquet"
+        if os.path.exists(file_path):
+            existing_df = pd.read_parquet(file_path, engine="pyarrow")
+            combined_df = self.merge_dataframes(existing_df, df, ['territory_id', 'player_id', 'campaign_id'])
+            combined_df.to_parquet(file_path, engine="pyarrow") 
+            if save_csv:
+                self.save_csv(file_path, combined_df)
+        else:   
+            df.to_parquet(file_path, engine="pyarrow")                   
+            rows, columns = df.shape
+            print(f"Storage Rows: {rows}, Columns: {columns}")
+            if save_csv:
+                self.save_csv(file_path, df)
+
+
     def merge_dataframes(self, df1:pd.DataFrame, df2:pd.DataFrame, columns_sub) -> pd.DataFrame:
         """Merge two dataframes."""
         combined_df = pd.concat([df1, df2], ignore_index=True) \

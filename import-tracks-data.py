@@ -89,7 +89,7 @@ def import_campaign_tracks_data(territory_id, start_time, end_time=None):
             df.loc[df.index.max() + 1] = vars(c_track)
     
     rows, columns = df.shape
-    print(f"Imported Rows: {rows}, Columns: {columns}")
+    print(f"Imported Campaign Tracks Rows: {rows}, Columns: {columns}")
     file_storage.merge_campaign_tracks(territory_id, df, True)
 
 
@@ -109,15 +109,15 @@ def import_campaign_subscriptions_data(territory_id, start_time, end_time=None):
             df.loc[df.index.max() + 1] = vars(c_subscription)
     
     rows, columns = df.shape
-    print(f"Imported Rows: {rows}, Columns: {columns}")
+    print(f"Imported Campaign Sybscriptions Rows: {rows}, Columns: {columns}")
     file_storage.merge_campaign_subscriptions(territory_id, df, True)
 
 
 if __name__ == "__main__":
-    start_time = "2025-03-01T00:00:00+00:00"
+    start_time = "2025-05-01T00:00:00+00:00"
     end_time = "2025-05-30T23:59:59+00:00"
 
-    #import_campaign_tracks_data("TAA", start_time)
-    #import_campaign_subscriptions_data("TAA", start_time)
+    #import_campaign_tracks_data("L", start_time)
+    #import_campaign_subscriptions_data("L", start_time)
     #import_nearest_edges_by_locate("TN", start_time)
-    import_nearest_edges_by_trace("TN", start_time, end_time)
+    #import_nearest_edges_by_trace("L", start_time, end_time)

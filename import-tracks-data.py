@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 import pandas as pd
 
@@ -116,6 +118,7 @@ def import_campaign_subscriptions_data(territory_id, start_time, end_time=None, 
 
 
 app = Flask(__name__)
+server_port = os.getenv("SERVER_PORT", 8078)
 
 @app.route('/api/import/campaign-tracks/<territory_id>', methods=['GET'])
 def api_import_campaign_tracks_data(territory_id):
@@ -146,7 +149,7 @@ def api_import_nearest_edges_by_trace(territory_id):
 
 
 if __name__ == "__main__":    
-    app.run(host='0.0.0.0', port=8078)
+    app.run(host='0.0.0.0', port=server_port)
 
     #start_time = "2025-05-01T00:00:00+00:00"
     #end_time = "2025-05-30T23:59:59+00:00"

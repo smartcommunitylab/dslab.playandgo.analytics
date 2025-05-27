@@ -117,3 +117,12 @@ class FileStorage:
         """Save data to a file."""
         file_path = orig_path.replace(".parquet", ".csv")
         df.to_csv(file_path, index=False)                   
+
+
+    def load_dataframe(self, territory_id:str, df_file:str) -> pd.DataFrame:
+        """Load a dataframe from a file."""
+        file_path = self.store_path + "/" + territory_id + "/" + df_file + ".parquet"
+        if os.path.exists(file_path):
+            return pd.read_parquet(file_path, engine="pyarrow")
+        else:
+            raise FileNotFoundError(f"File {file_path} does not exist.")

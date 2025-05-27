@@ -5,6 +5,8 @@ import pandas as pd
 
 from flask import Flask, request, Response
 
+from datetime import datetime
+
 from playandgo.pg_engine import PlayAndGoEngine
 from valhalla.valhalla_engine import ValhallaEngine
 from storage.storage_engine import FileStorage
@@ -29,11 +31,13 @@ def import_nearest_edges_by_trace(territory_id, start_time, end_time=None, save_
     file_storage = FileStorage()
 
     way_shape_map = {}
-
+    
     df_way_shapes = pd.DataFrame(columns=['way_id', 'shape'])
     df_tracks = pd.DataFrame(columns=['track_id', 'shape'])
     df_nearest_edges = pd.DataFrame(columns=['track_id', 'way_id'])
     for track in playandgo_engine.get_tracks(territory_id, start_time, end_time):
+        start = datetime.now()
+
         track_id = str(track["_id"])
         trace_route = valhalla_engine.find_nearest_edges_by_trace(track, track_id) 
         
@@ -63,7 +67,10 @@ def import_nearest_edges_by_trace(territory_id, start_time, end_time=None, save_
                         df_nearest_edges.loc[0] = [track_id, trace_info.way_id]
                     else:
                         df_nearest_edges.loc[df_nearest_edges.index.max() + 1] = [track_id, trace_info.way_id]
-                    
+
+        stop = datetime.now()
+        print(f"{datetime.isoformat(datetime.now())} Track ID: {track_id}, Time:{(stop - start).total_seconds()} seconds")
+
     rows, columns = df_tracks.shape
     print(f"Imported Tracks Rows: {rows}, Columns: {columns}")
     file_storage.merge_tracks(territory_id, df_tracks, save_csv)
@@ -120,31 +127,42 @@ def import_campaign_subscriptions_data(territory_id, start_time, end_time=None, 
 app = Flask(__name__)
 server_port = os.getenv("SERVER_PORT", 8078)
 
-@app.route('/api/import/campaign-tracks/<territory_id>', methods=['GET'])
-def api_import_campaign_tracks_data(territory_id):
-    print(repr(request.args.get('start_time')))
+@app.route('/api/import/campaign-tracks', methods=['GET'])
+def api_import_campaign_tracks_data():
+    start = datetime.now()
+    territory_id = request.args.get('territory_id', type=str)
     start_time = request.args.get('start_time', type=str)
     end_time = request.args.get('end_time', default=None, type=str)
     save_csv = request.args.get('save_csv', default=False, type=bool)
     import_campaign_tracks_data(territory_id, start_time, end_time, save_csv)
+    stop = datetime.now()
+    print(f"api_import_campaign_tracks_data Territory ID: {territory_id}, Time:{(stop - start).total_seconds()} seconds")
     return Response(status=200)
 
 
-@app.route('/api/import/campaign-subs/<territory_id>', methods=['GET'])
-def api_import_campaign_subscriptions_data(territory_id):
+@app.route('/api/import/campaign-subs', methods=['GET'])
+def api_import_campaign_subscriptions_data():
+    start = datetime.now()
+    territory_id = request.args.get('territory_id', type=str)
     start_time = request.args.get('start_time', type=str)
     end_time = request.args.get('end_time', default=None, type=str)
     save_csv = request.args.get('save_csv', default=False, type=bool)
     import_campaign_subscriptions_data(territory_id, start_time, end_time, save_csv)
+    stop = datetime.now()
+    print(f"api_import_campaign_subscriptions_data Territory ID: {territory_id}, Time:{(stop - start).total_seconds()} seconds")
     return Response(status=200)
 
 
-@app.route('/api/import/nearest-edges/<territory_id>', methods=['GET'])
-def api_import_nearest_edges_by_trace(territory_id):
+@app.route('/api/import/nearest-edges', methods=['GET'])
+def api_import_nearest_edges_by_trace():
+    start = datetime.now()
+    territory_id = request.args.get('territory_id', type=str)
     start_time = request.args.get('start_time', type=str)
     end_time = request.args.get('end_time', default=None, type=str)
     save_csv = request.args.get('save_csv', default=False, type=bool)
     import_nearest_edges_by_trace(territory_id, start_time, end_time, save_csv)
+    stop = datetime.now()
+    print(f"api_import_nearest_edges_by_trace Territory ID: {territory_id}, Time:{(stop - start).total_seconds()} seconds")
     return Response(status=200)
 
 

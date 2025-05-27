@@ -110,6 +110,7 @@ class ValhallaEngine:
         Find the nearest edges in the graph for the given points.
         """
         try:
+            #start = datetime.now()
             point_new = {
                 "longitude": lon,
                 "latitude": lat
@@ -129,6 +130,8 @@ class ValhallaEngine:
                                 edge_info = edge["edge_info"]
                                 if edge_info["way_id"] == way_id:
                                     endge_info_obj = EndgeInfo(edge_info["way_id"], edge_info["shape"])
+                                    #stop = datetime.now()
+                                    #print(f"{datetime.isoformat(datetime.now())} Way ID: {way_id}, Time:{(stop - start).total_seconds()} seconds")
                                     return endge_info_obj
             else:
                 print(f"Errore: {response.status_code} - {response.text}")
@@ -182,7 +185,7 @@ class ValhallaEngine:
         """
         trace_route = TraceRoute(track_id=track_id)
         try:
-            start = datetime.now()
+            #start = datetime.now()
             points = convert_tracked_instance_to_points(track)
             sorted_points = sorted(points, key=lambda x: x["time"])
             print(f"{datetime.isoformat(datetime.now())} Track ID: {track_id}, Points: {len(points)}")
@@ -216,8 +219,8 @@ class ValhallaEngine:
                     trace_route.trace_infos = trace_infos
                 else:
                     print(f"Errore[{track_id}]: {response.status_code} - {response.text}")
-            stop = datetime.now()
-            print(f"{datetime.isoformat(datetime.now())} Track ID: {track_id}, Edges: {len(trace_route.trace_infos)}, Time:{(stop - start).total_seconds()} seconds")
+            #stop = datetime.now()
+            #print(f"{datetime.isoformat(datetime.now())} Track ID: {track_id}, Edges: {len(trace_route.trace_infos)}, Time:{(stop - start).total_seconds()} seconds")
             return trace_route
         except Exception as e:
             print(f"Exception[{track_id}]: {e}")

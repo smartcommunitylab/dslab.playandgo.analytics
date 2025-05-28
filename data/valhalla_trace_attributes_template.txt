@@ -13,5 +13,5 @@
 	"costing": "{{ costing }}",
 	"shape_match": "map_snap",
     "use_timestamps": true,
-    "trace_options": {"search_radius": 5}
+    "trace_options": {"search_radius": 15}
 }

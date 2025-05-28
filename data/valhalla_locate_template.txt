@@ -12,5 +12,5 @@
 	],
 	"costing": "{{ costing }}",
 	"shape_match": "map_snap",
-    "trace_options": {"search_radius": 5}
+    "trace_options": {"search_radius": 15}
 }

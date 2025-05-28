@@ -30,11 +30,13 @@ def import_nearest_edges_by_trace(territory_id, start_time, end_time=None, save_
     valhalla_engine = ValhallaEngine()
     file_storage = FileStorage()
 
-    way_shape_map = {}
-    
-    df_way_shapes = pd.DataFrame(columns=['way_id', 'shape'])
+    try:
+        df_way_shapes = file_storage.load_dataframe(territory_id, file_storage.way_shapes)
+    except FileNotFoundError:
+        df_way_shapes = pd.DataFrame(columns=['way_id', 'shape'])
     df_tracks = pd.DataFrame(columns=['track_id', 'shape'])
     df_nearest_edges = pd.DataFrame(columns=['track_id', 'way_id'])
+
     for track in playandgo_engine.get_tracks(territory_id, start_time, end_time):
         start = datetime.now()
 
@@ -50,17 +52,15 @@ def import_nearest_edges_by_trace(territory_id, start_time, end_time=None, save_
             nearest_edges = []
             for trace_info in trace_route.trace_infos:
                 # check way shape
-                if trace_info.way_id not in way_shape_map:
+                if not trace_info.way_id in df_way_shapes['way_id'].values:
                     edge_info = valhalla_engine.find_nearest_edges_by_osm_way(track, trace_info.way_id, 
                                                                               trace_info.lon, trace_info.lat)
                     if edge_info is not None:
-                        way_shape_map[trace_info.way_id] = edge_info.shape
                         if df_way_shapes.empty:
                             df_way_shapes.loc[0] = [edge_info.way_id, edge_info.shape]
                         else:
                             df_way_shapes.loc[df_way_shapes.index.max() + 1] = [edge_info.way_id, edge_info.shape]
-                    else:
-                        way_shape_map[trace_info.way_id] = None
+
                 if not trace_info.way_id in nearest_edges:
                     nearest_edges.append(trace_info.way_id)
                     if df_nearest_edges.empty:
@@ -71,9 +71,12 @@ def import_nearest_edges_by_trace(territory_id, start_time, end_time=None, save_
         stop = datetime.now()
         print(f"{datetime.isoformat(datetime.now())} Track ID: {track_id}, Time:{(stop - start).total_seconds()} seconds")
 
+    start_time_dt = datetime.fromisoformat(start_time)
+    year = start_time_dt.strftime("%Y")
+
     rows, columns = df_tracks.shape
     print(f"Imported Tracks Rows: {rows}, Columns: {columns}")
-    file_storage.merge_tracks(territory_id, df_tracks, save_csv)
+    file_storage.merge_tracks(territory_id, year, df_tracks, save_csv)
 
     rows, columns = df_way_shapes.shape
     print(f"Imported Way Shapes Rows: {rows}, Columns: {columns}")
@@ -81,7 +84,7 @@ def import_nearest_edges_by_trace(territory_id, start_time, end_time=None, save_
 
     rows, columns = df_nearest_edges.shape
     print(f"Imported Nearest Edges Rows: {rows}, Columns: {columns}")
-    file_storage.merge_nearest_edges(territory_id, df_nearest_edges, save_csv)
+    file_storage.merge_nearest_edges(territory_id, year, df_nearest_edges, save_csv)
 
 
 def import_campaign_tracks_data(territory_id, start_time, end_time=None, save_csv=False):
@@ -98,10 +101,13 @@ def import_campaign_tracks_data(territory_id, start_time, end_time=None, save_cs
             df.loc[0] = vars(c_track)
         else:
             df.loc[df.index.max() + 1] = vars(c_track)
-    
+
+    start_time_dt = datetime.fromisoformat(start_time)
+    year = start_time_dt.strftime("%Y")
+
     rows, columns = df.shape
     print(f"Imported Campaign Tracks Rows: {rows}, Columns: {columns}")
-    file_storage.merge_campaign_tracks(territory_id, df, save_csv)
+    file_storage.merge_campaign_tracks(territory_id, year, df, save_csv)
 
 
 def import_campaign_subscriptions_data(territory_id, start_time, end_time=None, save_csv=False):
@@ -118,10 +124,13 @@ def import_campaign_subscriptions_data(territory_id, start_time, end_time=None, 
             df.loc[0] = vars(c_subscription)
         else:
             df.loc[df.index.max() + 1] = vars(c_subscription)
-    
+
+    start_time_dt = datetime.fromisoformat(start_time)
+    year = start_time_dt.strftime("%Y")
+
     rows, columns = df.shape
     print(f"Imported Campaign Sybscriptions Rows: {rows}, Columns: {columns}")
-    file_storage.merge_campaign_subscriptions(territory_id, df, save_csv)
+    file_storage.merge_campaign_subscriptions(territory_id, year, df, save_csv)
 
 
 app = Flask(__name__)

@@ -102,6 +102,7 @@ class ValhallaEngine:
         with open("data/valhalla_trace_attributes_template.txt", "r", encoding="utf-8") as f:
             template_content = f.read()
         self.template_trace_attribuutes = Template(template_content)
+        
         self.valhalla_uri = os.getenv("VALHALLA_URI", "http://localhost:8002/locate").rstrip("/")
         
 

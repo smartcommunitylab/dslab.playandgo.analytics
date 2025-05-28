@@ -10,17 +10,21 @@ if __name__ == "__main__":
     print(f"{int(df.memory_usage(deep=True).sum() / 2014)}K")
 
     df = file_storage.load_dataframe("L", "campaign_tracks")
+    rows, columns = df.shape
     print(f"Campaign Tracks Rows: {rows}, Columns: {columns}")
     print(f"{int(df.memory_usage(deep=True).sum() / 2014)}K")
 
     df = file_storage.load_dataframe("L", "tracks")
+    rows, columns = df.shape
     print(f"Tracks Rows: {rows}, Columns: {columns}")
     print(f"{int(df.memory_usage(deep=True).sum() / 2014)}K")
 
     df = file_storage.load_dataframe("L", "nearest_edges")
+    rows, columns = df.shape
     print(f"Nearest Edges Rows: {rows}, Columns: {columns}")
     print(f"{int(df.memory_usage(deep=True).sum() / 2014)}K")
 
     df = file_storage.load_dataframe("L", "way_shapes")
+    rows, columns = df.shape
     print(f"Way Shapes Rows: {rows}, Columns: {columns}")
     print(f"{int(df.memory_usage(deep=True).sum() / 2014)}K")

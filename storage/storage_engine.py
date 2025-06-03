@@ -67,7 +67,7 @@ class FileStorage:
         file_path = self.get_filename(territory_id, self.nearest_edges, year)
         if os.path.exists(file_path):
             existing_df = pd.read_parquet(file_path, engine="pyarrow")
-            combined_df = self.merge_dataframes(existing_df, df, ['track_id', 'way_id'])
+            combined_df = self.merge_dataframes(existing_df, df, ['track_id', 'way_id', 'ordinal'])
             combined_df.to_parquet(file_path, engine="pyarrow")
             if save_csv:
                 self.save_csv(file_path, combined_df) 

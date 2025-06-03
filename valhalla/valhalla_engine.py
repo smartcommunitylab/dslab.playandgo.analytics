@@ -1,6 +1,7 @@
 import os
 import json
 from datetime import datetime
+from datetime import timezone
 import requests
 from jinja2 import Template
 import traceback
@@ -80,11 +81,13 @@ def convert_tracked_instance_to_points(track):
     points = []
     if "validationResult" in track and "valid" in track["validationResult"] and track["validationResult"]["valid"] is True:
         for point in track["geolocationEvents"]:
+            dt = point["recorded_at"]
+            dt = dt.replace(tzinfo=timezone.utc) if dt.tzinfo is None else dt
             point_new = {
                 "longitude": point["longitude"],
                 "latitude": point["latitude"],
                 "recorded_at": point["recorded_at"],
-                "time": int(point["recorded_at"].timestamp())
+                "time": int(dt.timestamp())
             }   
             points.append(point_new)
     return points

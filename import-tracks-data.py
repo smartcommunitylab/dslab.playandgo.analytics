@@ -6,10 +6,15 @@ import pandas as pd
 from flask import Flask, request, Response
 
 from datetime import datetime
+from datetime import timezone
 
 from playandgo.pg_engine import PlayAndGoEngine
 from valhalla.valhalla_engine import ValhallaEngine
 from storage.storage_engine import FileStorage
+
+def get_utc_datetime(dt):
+    dt = dt.replace(tzinfo=timezone.utc) if dt.tzinfo is None else dt
+    return dt
 
 
 def import_nearest_edges_by_locate(territory_id, start_time, end_time=None):
@@ -99,7 +104,9 @@ def import_campaign_tracks_data(territory_id, start_time, end_time=None, save_cs
     df = pd.DataFrame(columns=['territory_id', 'player_id', 'track_id', 'campaign_id', 'campaign_type', 
                                'start_time', 'end_time', 'mode', 'validation_result', 'distance', 'duration'])
     for c_track in playandgo_engine.get_campaign_tracks(territory_id, start_time, end_time):
-        print(f"Campaign Track: {c_track}")
+        #print(f"Campaign Track: {c_track}")
+        c_track.start_time = get_utc_datetime(c_track.start_time)
+        c_track.end_time = get_utc_datetime(c_track.end_time)
         if df.empty:
             df.loc[0] = vars(c_track)
         else:
@@ -122,7 +129,8 @@ def import_campaign_subscriptions_data(territory_id, start_time, end_time=None, 
     df = pd.DataFrame(columns=['territory_id', 'player_id', 'campaign_id', 'campaign_type', 
                                'registration_date', 'group_id'])
     for c_subscription in playandgo_engine.get_campaign_subscriptions(territory_id, start_time, end_time):
-        print(f"Campaign Subscription: {c_subscription}")
+        #print(f"Campaign Subscription: {c_subscription}")
+        c_subscription.registration_date = get_utc_datetime(c_subscription.registration_date)
         if df.empty:
             df.loc[0] = vars(c_subscription)
         else:

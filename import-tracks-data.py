@@ -40,7 +40,7 @@ def import_nearest_edges_by_trace(territory_id, start_time, end_time=None, save_
     except FileNotFoundError:
         df_way_shapes = pd.DataFrame(columns=['way_id', 'shape'])
     df_tracks = pd.DataFrame(columns=['track_id', 'shape'])
-    df_nearest_edges = pd.DataFrame(columns=['track_id', 'way_id', 'lon', 'lat', 'timestamp', 'ordinal'])
+    df_nearest_edges = pd.DataFrame(columns=['track_id', 'way_id', 'timestamp', 'ordinal'])
 
     for track in playandgo_engine.get_tracks(territory_id, start_time, end_time):
         start = datetime.now()
@@ -55,6 +55,7 @@ def import_nearest_edges_by_trace(territory_id, start_time, end_time=None, save_
         
         if len(trace_route.trace_infos) > 0:
             index = 0
+            last_way_id = -1
             for trace_info in trace_route.trace_infos:
                 # check way shape
                 if not trace_info.way_id in df_way_shapes['way_id'].values:
@@ -66,15 +67,15 @@ def import_nearest_edges_by_trace(territory_id, start_time, end_time=None, save_
                         else:
                             df_way_shapes.loc[df_way_shapes.index.max() + 1] = [edge_info.way_id, edge_info.shape]
 
-                if df_nearest_edges.empty:
-                    df_nearest_edges.loc[0] = [track_id, trace_info.way_id, 
-                                                trace_info.lon, trace_info.lat, 
-                                                trace_info.timestamp, index]
-                else:
-                    df_nearest_edges.loc[df_nearest_edges.index.max() + 1] = [track_id, trace_info.way_id, 
-                                                trace_info.lon, trace_info.lat, 
-                                                trace_info.timestamp, index]
-                index += 1
+                if trace_info.way_id != last_way_id:
+                    last_way_id = trace_info.way_id
+                    if df_nearest_edges.empty:
+                        df_nearest_edges.loc[0] = [track_id, trace_info.way_id, 
+                                                    trace_info.timestamp, index]
+                    else:
+                        df_nearest_edges.loc[df_nearest_edges.index.max() + 1] = [track_id, trace_info.way_id, 
+                                                    trace_info.timestamp, index]
+                    index += 1
 
         stop = datetime.now()
         print(f"{datetime.isoformat(datetime.now())} Track ID: {track_id}, Time:{(stop - start).total_seconds()} seconds")

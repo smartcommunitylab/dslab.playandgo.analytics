@@ -59,3 +59,5 @@ deploy-prod:
     - echo "deploy backend"
     - kubectl -n playngo-prod set image deployments/playngo-analytics playngo-analytics=$CONTAINER_IMAGE --record=true
     - kubectl -n playngo-prod rollout status deployment playngo-analytics
+  only:
+    - prod

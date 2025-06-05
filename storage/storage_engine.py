@@ -3,7 +3,9 @@ import pandas as pd
 
 class FileStorage:
     def __init__(self):
-        self.store_path = os.getenv("STORAGE_PATH", "./files/").strip("/")
+        self.store_path = os.getenv("STORAGE_PATH", "./files/")
+        if self.store_path.endswith("/") or self.store_path.endswith("\\"):
+            self.store_path = self.store_path[:-1]
         self.campaign_tracks = "campaign_tracks"
         self.campaign_subscriptions = "campaign_subscriptions"
         self.tracks = "tracks"
@@ -14,7 +16,6 @@ class FileStorage:
     def check_directory(self, territory_id:str):
         """Check if the directory exists."""
         directory_path = self.store_path + "/" + territory_id
-        print(f"Check dir {directory_path}")
         if not os.path.exists(directory_path):
             os.makedirs(directory_path)
             print(f"Created directory: {directory_path}")

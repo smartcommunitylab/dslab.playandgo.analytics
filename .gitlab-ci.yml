@@ -1,0 +1,61 @@
+image: docker:latest
+
+services:
+  - docker:dind
+
+stages:
+  - build
+  - test
+  - deploy
+
+variables:
+  SECURE_LOG_LEVEL: info
+  DOCKER_DRIVER: overlay
+  CONTAINER_IMAGE: smartcommunitylab/playngo-analytics:$CI_COMMIT_REF_NAME-$CI_COMMIT_SHORT_SHA
+  CONTAINER_IMAGE_LATEST: smartcommunitylab/playngo-analytics:latest
+  CS_IMAGE: smartcommunitylab/playngo-analytics:latest
+
+include:
+  - template: Security/Container-Scanning.gitlab-ci.yml
+  - template: Security/Dependency-Scanning.gitlab-ci.yml
+  - template: Security/SAST.gitlab-ci.yml
+
+backend-container-build:
+  stage: test
+  variables:
+    BUILDKIT_PROGRESS: plain
+    DOCKER_BUILDKIT: 1 
+  script:
+    - docker login -u $DHUB_USER -p $DHUB_PASS
+    - DOCKER_BUILDKIT=1 docker build -f Dockerfile -t $CONTAINER_IMAGE -t $CONTAINER_IMAGE_LATEST .
+    - docker push $CONTAINER_IMAGE
+    - docker push $CONTAINER_IMAGE_LATEST
+  only:
+    - dev
+    - prod
+    - main
+
+container_scanning:
+  stage: test
+  dependencies:
+    - backend-container-build
+  variables:
+    DOCKER_IMAGE: $CONTAINER_IMAGE
+    DOCKERFILE_PATH: "Dockerfile"
+    GIT_STRATEGY: fetch
+    DOCKER_USER: ""
+    DOCKER_PASSWORD: ""
+  rules:
+    - if: '$CI_COMMIT_REF_NAME == "main"'
+
+deploy-prod:
+  stage: deploy
+  image: 
+    name: bitnami/kubectl:latest
+    entrypoint: ['']
+  environment:
+    name: dslab
+  script:
+    - echo "deploy backend"
+    - kubectl -n playngo-prod set image deployments/playngo-analytics playngo-analytics=$CONTAINER_IMAGE --record=true
+    - kubectl -n playngo-prod rollout status deployment playngo-analytics

@@ -14,8 +14,11 @@ class FileStorage:
     def check_directory(self, territory_id:str):
         """Check if the directory exists."""
         directory_path = self.store_path + "/" + territory_id
+        print(f"Check dir {directory_path}")
         if not os.path.exists(directory_path):
             os.makedirs(directory_path)
+            print(f"Created directory: {directory_path}")
+
 
     def get_filename(self, territory_id:str, df_file:str, year:str=None) -> str: 
         """Get the filename for a dataframe."""

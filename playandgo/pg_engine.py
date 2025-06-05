@@ -60,7 +60,7 @@ class PlayAndGoEngine:
     def __init__(self):
         self.mongo_uri = os.getenv("PG_MONGO_URI", "mongodb://localhost:27017/")
         self.mongo_db = os.getenv("PG_MONGO_DB", "playngo-engine")
-        self.direct_connection = bool(os.getenv("PG_MONGO_DIRECT_CONNECTION", "False"))
+        self.direct_connection = eval(os.getenv("PG_MONGO_DIRECT_CONNECTION", "False"))
 
 
     def get_tracks(self, territory_id: str, start_time: str, end_time: str = None):
@@ -91,7 +91,7 @@ class PlayAndGoEngine:
 
     def get_campaign_tracks(self, territory_id: str, start_time: str, end_time: str = None):
         # Connessione al server MongoDB (modifica la stringa di connessione se necessario)
-        client = MongoClient(self.mongo_uri, directConnection=True)
+        client = MongoClient(self.mongo_uri, directConnection=self.direct_connection)
 
         # Seleziona il database
         db = client[self.mongo_db]
@@ -138,7 +138,7 @@ class PlayAndGoEngine:
 
     def get_campaign_subscriptions(self, territory_id: str, start_time: str, end_time: str = None):
         # Connessione al server MongoDB (modifica la stringa di connessione se necessario)
-        client = MongoClient(self.mongo_uri, directConnection=True)
+        client = MongoClient(self.mongo_uri, directConnection=self.direct_connection)
 
         # Seleziona il database
         db = client[self.mongo_db]

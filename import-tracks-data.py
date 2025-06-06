@@ -162,20 +162,35 @@ def get_df_info_list(territory_id:str, year:str):
     file_storage = FileStorage()
     info_list = []
 
-    df_info = get_df_info(file_storage, territory_id, "campaign_subscriptions", year)
-    info_list.append(df_info)
+    try:
+        df_info = get_df_info(file_storage, territory_id, "campaign_subscriptions", year)
+        info_list.append(df_info)
+    except FileNotFoundError:
+        print(f"File not found for campaign_subscriptions in territory {territory_id} for year {year}")
 
-    df_info = get_df_info(file_storage, territory_id, "campaign_tracks", year)
-    info_list.append(df_info)
+    try:
+        df_info = get_df_info(file_storage, territory_id, "campaign_tracks", year)
+        info_list.append(df_info)
+    except FileNotFoundError:
+        print(f"File not found for campaign_tracks in territory {territory_id} for year {year}")
 
-    df_info = get_df_info(file_storage, territory_id, "tracks", year)
-    info_list.append(df_info)
+    try:
+        df_info = get_df_info(file_storage, territory_id, "tracks", year)
+        info_list.append(df_info)
+    except FileNotFoundError:
+        print(f"File not found for tracks in territory {territory_id} for year {year}")
 
-    df_info = get_df_info(file_storage, territory_id, "nearest_edges", year)
-    info_list.append(df_info)
+    try:
+        df_info = get_df_info(file_storage, territory_id, "nearest_edges", year)
+        info_list.append(df_info)
+    except FileNotFoundError:
+        print(f"File not found for nearest_edges in territory {territory_id} for year {year}")
 
-    df_info = get_df_info(file_storage, territory_id, "way_shapes")
-    info_list.append(df_info)
+    try:
+        df_info = get_df_info(file_storage, territory_id, "way_shapes")
+        info_list.append(df_info)
+    except FileNotFoundError:
+        print(f"File not found for way_shapes in territory {territory_id}")
 
     return info_list
 

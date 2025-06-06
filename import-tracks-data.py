@@ -36,7 +36,7 @@ def import_nearest_edges_by_trace(territory_id, start_time, end_time=None, save_
     file_storage = FileStorage()
 
     try:
-        df_way_shapes = file_storage.load_dataframe(territory_id, file_storage.way_shapes)
+        size, df_way_shapes = file_storage.load_dataframe(territory_id, file_storage.way_shapes)
     except FileNotFoundError:
         df_way_shapes = pd.DataFrame(columns=['way_id', 'shape'])
     df_tracks = pd.DataFrame(columns=['track_id', 'shape'])

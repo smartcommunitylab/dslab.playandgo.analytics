@@ -16,7 +16,6 @@ class FileStorage:
     def check_directory(self, territory_id:str):
         """Check if the directory exists."""
         directory_path = self.store_path + "/" + territory_id
-        print(f"Checking directory: {directory_path}")
         if not os.path.exists(directory_path):
             os.makedirs(directory_path)
             print(f"Created directory: {directory_path}")

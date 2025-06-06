@@ -57,25 +57,29 @@ def import_nearest_edges_by_trace(territory_id, start_time, end_time=None, save_
             index = 0
             last_way_id = -1
             for trace_info in trace_route.trace_infos:
-                # check way shape
-                if not trace_info.way_id in df_way_shapes['way_id'].values:
-                    edge_info = valhalla_engine.find_nearest_edges_by_osm_way(track, trace_info.way_id, 
-                                                                              trace_info.lon, trace_info.lat)
-                    if edge_info is not None:
-                        if df_way_shapes.empty:
-                            df_way_shapes.loc[0] = [edge_info.way_id, edge_info.shape]
-                        else:
-                            df_way_shapes.loc[df_way_shapes.index.max() + 1] = [edge_info.way_id, edge_info.shape]
+                try:
+                    # check way shape
+                    if not trace_info.way_id in df_way_shapes['way_id'].values:
+                        edge_info = valhalla_engine.find_nearest_edges_by_osm_way(track, trace_info.way_id, 
+                                                                                trace_info.lon, trace_info.lat)
+                        if edge_info is not None:
+                            if df_way_shapes.empty:
+                                df_way_shapes.loc[0] = [edge_info.way_id, edge_info.shape]
+                            else:
+                                df_way_shapes.loc[df_way_shapes.index.max() + 1] = [edge_info.way_id, edge_info.shape]
 
-                if trace_info.way_id != last_way_id:
-                    last_way_id = trace_info.way_id
-                    if df_nearest_edges.empty:
-                        df_nearest_edges.loc[0] = [track_id, trace_info.way_id, 
-                                                    trace_info.timestamp, index]
-                    else:
-                        df_nearest_edges.loc[df_nearest_edges.index.max() + 1] = [track_id, trace_info.way_id, 
-                                                    trace_info.timestamp, index]
-                    index += 1
+                    if trace_info.way_id != last_way_id:
+                        last_way_id = trace_info.way_id
+                        if df_nearest_edges.empty:
+                            df_nearest_edges.loc[0] = [track_id, trace_info.way_id, 
+                                                        trace_info.timestamp, index]
+                        else:
+                            df_nearest_edges.loc[df_nearest_edges.index.max() + 1] = [track_id, trace_info.way_id, 
+                                                        trace_info.timestamp, index]
+                        index += 1
+                except Exception as e:
+                    print(f"Error processing trace_info: {trace_info}, Error: {e}")
+                    continue
 
         stop = datetime.now()
         print(f"{datetime.isoformat(datetime.now())} Track ID: {track_id}, Time:{(stop - start).total_seconds()} seconds")

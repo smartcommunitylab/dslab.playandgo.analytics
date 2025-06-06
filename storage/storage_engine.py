@@ -136,10 +136,11 @@ class FileStorage:
         df.to_csv(file_path, index=False)                   
 
 
-    def load_dataframe(self, territory_id:str, df_file:str, year:str=None) -> pd.DataFrame:
+    def load_dataframe(self, territory_id:str, df_file:str, year:str=None) -> tuple:
         """Load a dataframe from a file."""
         file_path = self.get_filename(territory_id, df_file, year)
         if os.path.exists(file_path):
-            return pd.read_parquet(file_path, engine="pyarrow")
+            file_stats = os.stat(file_path)
+            return file_stats.st_size, pd.read_parquet(file_path, engine="pyarrow")
         else:
             raise FileNotFoundError(f"File {file_path} does not exist.")

@@ -145,6 +145,41 @@ def import_campaign_subscriptions_data(territory_id, start_time, end_time=None, 
     file_storage.merge_campaign_subscriptions(territory_id, year, df, save_csv)
 
 
+def get_df_info(file_storage, territory_id:str, df_file:str, year:str=None):
+    size, df = file_storage.load_dataframe(territory_id, df_file, year)
+    rows, columns = df.shape
+    df_info = {
+        "df_name": df_file,
+        "rows": rows,
+        "columns": columns,
+        "memory": int(df.memory_usage(deep=True).sum() / 1024),  # Convert bytes to kilobytes
+        "file_size": int(size / 1024)
+    }
+    return df_info
+
+
+def get_df_info_map(territory_id:str, year:str):
+    file_storage = FileStorage()
+    info_map = {}
+
+    df_info = get_df_info(file_storage, territory_id, "campaign_subscriptions", year)
+    info_map["campaign_subscriptions"] = df_info
+
+    df_info = get_df_info(file_storage, territory_id, "campaign_tracks", year)
+    info_map["campaign_tracks"] = df_info
+
+    df_info = get_df_info(file_storage, territory_id, "tracks", year)
+    info_map["tracks"] = df_info
+
+    df_info = get_df_info(file_storage, territory_id, "nearest_edges", year)
+    info_map["nearest_edges"] = df_info
+
+    df_info = get_df_info(file_storage, territory_id, "way_shapes", year)
+    info_map["way_shapes"] = df_info
+
+    return info_map
+
+
 app = Flask(__name__)
 server_port = os.getenv("SERVER_PORT", 8078)
 
@@ -185,6 +220,17 @@ def api_import_nearest_edges_by_trace():
     stop = datetime.now()
     print(f"api_import_nearest_edges_by_trace Territory ID: {territory_id}, Time:{(stop - start).total_seconds()} seconds")
     return Response(status=200)
+
+
+@app.route('/api/import/info', methods=['GET'])
+def api_info_df():
+    start = datetime.now()
+    territory_id = request.args.get('territory_id', type=str)
+    year = request.args.get('year', type=str)
+    info_map = get_df_info(territory_id, year)
+    stop = datetime.now()
+    print(f"api_info_df Territory ID: {territory_id}, Time:{(stop - start).total_seconds()} seconds")
+    return info_map
 
 
 if __name__ == "__main__":    

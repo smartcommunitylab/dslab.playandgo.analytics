@@ -109,13 +109,16 @@ def import_campaign_tracks_data(territory_id, start_time, end_time=None, save_cs
     df = pd.DataFrame(columns=['territory_id', 'player_id', 'track_id', 'campaign_id', 'campaign_type', 
                                'start_time', 'end_time', 'mode', 'validation_result', 'distance', 'duration'])
     for c_track in playandgo_engine.get_campaign_tracks(territory_id, start_time, end_time):
-        #print(f"Campaign Track: {c_track}")
-        c_track.start_time = get_utc_datetime(c_track.start_time)
-        c_track.end_time = get_utc_datetime(c_track.end_time)
-        if df.empty:
-            df.loc[0] = vars(c_track)
-        else:
-            df.loc[df.index.max() + 1] = vars(c_track)
+        try:
+            c_track.start_time = get_utc_datetime(c_track.start_time)
+            c_track.end_time = get_utc_datetime(c_track.end_time)
+            if df.empty:
+                df.loc[0] = vars(c_track)
+            else:
+                df.loc[df.index.max() + 1] = vars(c_track)
+        except Exception as e:
+            print(f"Error processing campaign track: {c_track.track_id}, Error: {e}")
+            continue
 
     start_time_dt = datetime.fromisoformat(start_time)
     year = start_time_dt.strftime("%Y")
@@ -134,13 +137,16 @@ def import_campaign_subscriptions_data(territory_id, start_time, end_time=None, 
     df = pd.DataFrame(columns=['territory_id', 'player_id', 'campaign_id', 'campaign_type', 
                                'registration_date', 'group_id'])
     for c_subscription in playandgo_engine.get_campaign_subscriptions(territory_id, start_time, end_time):
-        #print(f"Campaign Subscription: {c_subscription}")
-        c_subscription.registration_date = get_utc_datetime(c_subscription.registration_date)
-        if df.empty:
-            df.loc[0] = vars(c_subscription)
-        else:
-            df.loc[df.index.max() + 1] = vars(c_subscription)
-
+        try:
+            c_subscription.registration_date = get_utc_datetime(c_subscription.registration_date)
+            if df.empty:
+                df.loc[0] = vars(c_subscription)
+            else:
+                df.loc[df.index.max() + 1] = vars(c_subscription)
+        except Exception as e:
+            print(f"Error processing campaign subscription: {c_subscription.campaign_id}, Error: {e}")
+            continue
+        
     start_time_dt = datetime.fromisoformat(start_time)
     year = start_time_dt.strftime("%Y")
 

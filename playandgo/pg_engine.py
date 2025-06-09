@@ -119,6 +119,8 @@ class PlayAndGoEngine:
             campaign_id = track["campaignId"]
             if campaign_id in campaign_map:
                 campaign = campaign_map[campaign_id]
+                if not "modeType" in track:
+                    continue
                 c_track = CampaignTrack(
                     territory_id=territory_id,
                     player_id=track["playerId"],

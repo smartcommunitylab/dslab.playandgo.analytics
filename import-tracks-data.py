@@ -35,6 +35,7 @@ def import_nearest_edges_by_trace(territory_id, start_time, end_time=None, save_
     valhalla_engine = ValhallaEngine()
     file_storage = FileStorage()
 
+    size = 0
     try:
         size, df_way_shapes = file_storage.load_dataframe(territory_id, file_storage.way_shapes)
     except FileNotFoundError:
@@ -87,17 +88,27 @@ def import_nearest_edges_by_trace(territory_id, start_time, end_time=None, save_
     start_time_dt = datetime.fromisoformat(start_time)
     year = start_time_dt.strftime("%Y")
 
+    infos = []
+
     rows, columns = df_tracks.shape
     print(f"Imported Tracks Rows: {rows}, Columns: {columns}")
     file_storage.merge_tracks(territory_id, year, df_tracks, save_csv)
+    info_map = {"name": file_storage.tracks, "rows": rows}
+    infos.append(info_map)
 
     rows, columns = df_way_shapes.shape
     print(f"Imported Way Shapes Rows: {rows}, Columns: {columns}")
     file_storage.merge_way_shapes(territory_id, df_way_shapes, save_csv)
+    info_map = {"name": file_storage.way_shapes, "rows": (rows - size)}
+    infos.append(info_map)
 
     rows, columns = df_nearest_edges.shape
     print(f"Imported Nearest Edges Rows: {rows}, Columns: {columns}")
     file_storage.merge_nearest_edges(territory_id, year, df_nearest_edges, save_csv)
+    info_map = {"name": file_storage.nearest_edges, "rows": rows}
+    infos.append(info_map)
+
+    return infos
 
 
 def import_campaign_tracks_data(territory_id, start_time, end_time=None, save_csv=False):
@@ -126,6 +137,8 @@ def import_campaign_tracks_data(territory_id, start_time, end_time=None, save_cs
     rows, columns = df.shape
     print(f"Imported Campaign Tracks Rows: {rows}, Columns: {columns}")
     file_storage.merge_campaign_tracks(territory_id, year, df, save_csv)
+    info_map = {"name": file_storage.campaign_tracks, "rows": rows}
+    return info_map
 
 
 def import_campaign_subscriptions_data(territory_id, start_time, end_time=None, save_csv=False):
@@ -153,6 +166,8 @@ def import_campaign_subscriptions_data(territory_id, start_time, end_time=None, 
     rows, columns = df.shape
     print(f"Imported Campaign Sybscriptions Rows: {rows}, Columns: {columns}")
     file_storage.merge_campaign_subscriptions(territory_id, year, df, save_csv)
+    info_map = {"name": file_storage.campaign_subscriptions, "rows": rows}
+    return info_map
 
 
 def get_df_info(file_storage, territory_id:str, df_file:str, year:str=None):
@@ -173,31 +188,31 @@ def get_df_info_list(territory_id:str, year:str):
     info_list = []
 
     try:
-        df_info = get_df_info(file_storage, territory_id, "campaign_subscriptions", year)
+        df_info = get_df_info(file_storage, territory_id, file_storage.campaign_subscriptions, year)
         info_list.append(df_info)
     except FileNotFoundError:
         print(f"File not found for campaign_subscriptions in territory {territory_id} for year {year}")
 
     try:
-        df_info = get_df_info(file_storage, territory_id, "campaign_tracks", year)
+        df_info = get_df_info(file_storage, territory_id, file_storage.campaign_tracks, year)
         info_list.append(df_info)
     except FileNotFoundError:
         print(f"File not found for campaign_tracks in territory {territory_id} for year {year}")
 
     try:
-        df_info = get_df_info(file_storage, territory_id, "tracks", year)
+        df_info = get_df_info(file_storage, territory_id, file_storage.tracks, year)
         info_list.append(df_info)
     except FileNotFoundError:
         print(f"File not found for tracks in territory {territory_id} for year {year}")
 
     try:
-        df_info = get_df_info(file_storage, territory_id, "nearest_edges", year)
+        df_info = get_df_info(file_storage, territory_id, file_storage.nearest_edges, year)
         info_list.append(df_info)
     except FileNotFoundError:
         print(f"File not found for nearest_edges in territory {territory_id} for year {year}")
 
     try:
-        df_info = get_df_info(file_storage, territory_id, "way_shapes")
+        df_info = get_df_info(file_storage, territory_id, file_storage.way_shapes)
         info_list.append(df_info)
     except FileNotFoundError:
         print(f"File not found for way_shapes in territory {territory_id}")
@@ -208,6 +223,7 @@ def get_df_info_list(territory_id:str, year:str):
 app = Flask(__name__)
 server_port = os.getenv("SERVER_PORT", 8078)
 
+
 @app.route('/api/import/campaign-tracks', methods=['GET'])
 def api_import_campaign_tracks_data():
     start = datetime.now()
@@ -215,10 +231,10 @@ def api_import_campaign_tracks_data():
     start_time = request.args.get('start_time', type=str)
     end_time = request.args.get('end_time', default=None, type=str)
     save_csv = request.args.get('save_csv', default=False, type=bool)
-    import_campaign_tracks_data(territory_id, start_time, end_time, save_csv)
+    info_map = import_campaign_tracks_data(territory_id, start_time, end_time, save_csv)
     stop = datetime.now()
     print(f"api_import_campaign_tracks_data Territory ID: {territory_id}, Time:{(stop - start).total_seconds()} seconds")
-    return Response(status=200)
+    return info_map
 
 
 @app.route('/api/import/campaign-subs', methods=['GET'])
@@ -228,10 +244,10 @@ def api_import_campaign_subscriptions_data():
     start_time = request.args.get('start_time', type=str)
     end_time = request.args.get('end_time', default=None, type=str)
     save_csv = request.args.get('save_csv', default=False, type=bool)
-    import_campaign_subscriptions_data(territory_id, start_time, end_time, save_csv)
+    info_map = import_campaign_subscriptions_data(territory_id, start_time, end_time, save_csv)
     stop = datetime.now()
     print(f"api_import_campaign_subscriptions_data Territory ID: {territory_id}, Time:{(stop - start).total_seconds()} seconds")
-    return Response(status=200)
+    return info_map
 
 
 @app.route('/api/import/nearest-edges', methods=['GET'])
@@ -241,10 +257,10 @@ def api_import_nearest_edges_by_trace():
     start_time = request.args.get('start_time', type=str)
     end_time = request.args.get('end_time', default=None, type=str)
     save_csv = request.args.get('save_csv', default=False, type=bool)
-    import_nearest_edges_by_trace(territory_id, start_time, end_time, save_csv)
+    info_map = import_nearest_edges_by_trace(territory_id, start_time, end_time, save_csv)
     stop = datetime.now()
     print(f"api_import_nearest_edges_by_trace Territory ID: {territory_id}, Time:{(stop - start).total_seconds()} seconds")
-    return Response(status=200)
+    return info_map
 
 
 @app.route('/api/import/info', methods=['GET'])

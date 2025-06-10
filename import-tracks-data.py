@@ -35,9 +35,10 @@ def import_nearest_edges_by_trace(territory_id, start_time, end_time=None, save_
     valhalla_engine = ValhallaEngine()
     file_storage = FileStorage()
 
-    size = 0
+    dim = 0
     try:
         size, df_way_shapes = file_storage.load_dataframe(territory_id, file_storage.way_shapes)
+        dim =  df_way_shapes.shape[0]
     except FileNotFoundError:
         df_way_shapes = pd.DataFrame(columns=['way_id', 'shape'])
     df_tracks = pd.DataFrame(columns=['track_id', 'shape'])
@@ -99,7 +100,7 @@ def import_nearest_edges_by_trace(territory_id, start_time, end_time=None, save_
     rows, columns = df_way_shapes.shape
     print(f"Imported Way Shapes Rows: {rows}, Columns: {columns}")
     file_storage.merge_way_shapes(territory_id, df_way_shapes, save_csv)
-    info_map = {"name": file_storage.way_shapes, "rows": (rows - size)}
+    info_map = {"name": file_storage.way_shapes, "rows": (rows - dim)}
     infos.append(info_map)
 
     rows, columns = df_nearest_edges.shape

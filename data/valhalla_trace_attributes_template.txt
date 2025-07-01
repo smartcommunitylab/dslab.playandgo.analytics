@@ -11,7 +11,7 @@
         {% endfor %}
 	],
 	"costing": "{{ costing }}",
-	"shape_match": "map_snap",
+	"shape_match": "walk_or_snap",
     "use_timestamps": true,
     "trace_options": {"search_radius": 15}
 }

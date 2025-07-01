@@ -4,3 +4,6 @@ requests
 pandas
 pyarrow
 flask
+pyrosm
+osmnx
+h3-py

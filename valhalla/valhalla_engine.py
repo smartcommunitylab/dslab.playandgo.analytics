@@ -40,6 +40,17 @@ class TraceInfo:
     def __repr__(self):
         return f"TraceInfo(edge_index={self.edge_index}, way_id={self.way_id}, travel_mode={self.travel_mode})"
 
+    def to_dict(self):
+        return {
+            'edge_index': self.edge_index, 
+            'distance_from_trace_point': self.distance_from_trace_point,
+            'distance_along_edge': self.distance_along_edge,
+            'lon': self.lon,
+            'lat': self.lat,  
+            'way_id': self.way_id,
+            'travel_mode': self.travel_mode,
+            'timestamp': self.timestamp
+        } 
 
 class TraceRoute:
     def __init__(self, track_id:str, shape:str=None, trace_infos:list[TraceInfo]=[]):
@@ -50,6 +61,8 @@ class TraceRoute:
     def __repr__(self):
         return f"TraceRoute(track_id={self.track_id})"
     
+    def to_dict(self):
+        return {'track_id': self.track_id, 'shape': self.shape, 'trace_infos': [info.to_dict() for info in self.trace_infos]}    
 
 def get_transit_mode(track):
     """
@@ -60,9 +73,9 @@ def get_transit_mode(track):
             mode = track["freeTrackingTransport"]
             match mode:
                 case "bus":
-                    return "auto"
+                    return "bus"
                 case "train":
-                    return "auto"
+                    return "multimodal"
                 case "bike":
                     return "bicycle"
                 case "walk":

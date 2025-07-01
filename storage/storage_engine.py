@@ -10,6 +10,7 @@ class FileStorage:
         self.campaign_subscriptions = "campaign_subscriptions"
         self.tracks = "tracks"
         self.nearest_edges = "nearest_edges"
+        self.nearest_edges_ox = "nearest_edges_ox"
         self.way_shapes = "way_shapes"
 
 
@@ -72,6 +73,24 @@ class FileStorage:
         if os.path.exists(file_path):
             existing_df = pd.read_parquet(file_path, engine="pyarrow")
             combined_df = self.merge_dataframes(existing_df, df, ['track_id', 'way_id', 'ordinal'])
+            combined_df.to_parquet(file_path, engine="pyarrow")
+            if save_csv:
+                self.save_csv(file_path, combined_df) 
+        else:   
+            df.to_parquet(file_path, engine="pyarrow")                   
+            rows, columns = df.shape
+            print(f"Storage Rows: {rows}, Columns: {columns}")
+            if save_csv:
+                self.save_csv(file_path, df)
+
+
+    def merge_nearest_edges_ox(self, territory_id:str, year:str, df:pd.DataFrame, save_csv:bool=False):
+        """Merge data to a file."""
+        self.check_directory(territory_id)
+        file_path = self.get_filename(territory_id, self.nearest_edges_ox, year)
+        if os.path.exists(file_path):
+            existing_df = pd.read_parquet(file_path, engine="pyarrow")
+            combined_df = self.merge_dataframes(existing_df, df, ['track_id', 'ordinal'])
             combined_df.to_parquet(file_path, engine="pyarrow")
             if save_csv:
                 self.save_csv(file_path, combined_df) 

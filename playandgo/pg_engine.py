@@ -1,7 +1,7 @@
 import os
 from pymongo import MongoClient
 from datetime import datetime
-
+from bson.objectid import ObjectId
 
 def get_group_id(subscription, campaign_type) -> str:
     """
@@ -62,8 +62,7 @@ class PlayAndGoEngine:
         self.mongo_db = os.getenv("PG_MONGO_DB", "playngo-engine")
         self.direct_connection = eval(os.getenv("PG_MONGO_DIRECT_CONNECTION", "False"))
 
-
-    def get_tracks(self, territory_id: str, start_time: str, end_time: str = None):
+    def get_track(self, territory_id: str, track_id: str):
         # Connessione al server MongoDB (modifica la stringa di connessione se necessario)
         client = MongoClient(self.mongo_uri, directConnection=self.direct_connection)
 
@@ -73,14 +72,40 @@ class PlayAndGoEngine:
         # Seleziona la collection
         collection = db["trackedInstances"]
 
-        # Ottieni un cursore per tutti i documenti della collection
+        # Ottieni il documento specifico per track_id
+        track = collection.find_one({"territoryId": territory_id, "_id": ObjectId(track_id)})
+
+        client.close()
+
+        if track and "validationResult" in track and "valid" in track["validationResult"] and track["validationResult"]["valid"] is True:
+            return track
+        return None
+
+
+    def get_tracks(self, territory_id: str, start_time: str, end_time: str = None, mode: str = None):
+        # Connessione al server MongoDB (modifica la stringa di connessione se necessario)
+        client = MongoClient(self.mongo_uri, directConnection=self.direct_connection)
+
+        # Seleziona il database
+        db = client[self.mongo_db]
+
+        # Seleziona la collection
+        collection = db["trackedInstances"]
+
+        query = {"territoryId":territory_id}
+
         start_time_dt = datetime.fromisoformat(start_time)
         if end_time is not None:
             end_time_dt = datetime.fromisoformat(end_time)
-            cursor = collection.find({"territoryId":territory_id, "startTime":{"$gt":start_time_dt, "$lt":end_time_dt}})
+            query["startTime"] = {"$gt": start_time_dt, "$lt": end_time_dt}
         else:
-            cursor = collection.find({"territoryId":territory_id, "startTime":{"$gt":start_time_dt}})
+            query["startTime"] = {"$gt": start_time_dt}
 
+        if mode is not None:
+            query["freeTrackingTransport"] = mode
+        
+        # Ottieni un cursore per tutti i documenti della collection
+        cursor = collection.find(query)
         # Itera sui documenti
         for track in cursor:
             #get only valid docuemt

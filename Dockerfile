@@ -1,6 +1,7 @@
-FROM python:3.13-alpine
+FROM python:3.13-slim
 COPY requirements.txt /app/requirements.txt
 WORKDIR /app
+RUN apt update && apt install -y build-essential
 RUN pip install -r requirements.txt
 COPY data/ /app/data/
 COPY playandgo/ /app/playandgo/

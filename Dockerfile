@@ -1,7 +1,8 @@
 FROM python:3.13-alpine
 COPY requirements.txt /app/requirements.txt
 WORKDIR /app
-RUN pip install -r requirements.txt
+#RUN pip install -r requirements.txt
+RUN conda install -c conda-forge --file requirements.txt
 COPY data/ /app/data/
 COPY playandgo/ /app/playandgo/
 COPY storage/ /app/storage/

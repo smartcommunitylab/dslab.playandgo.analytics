@@ -129,6 +129,7 @@ def import_nearest_edges_by_ox(territory_id, start_time, end_time=None, save_csv
     except FileNotFoundError:
         df_way_shapes = pd.DataFrame(columns=['way_id', 'shape'])
     df_tracks = pd.DataFrame(columns=['track_id', 'shape'])
+    df_tracks_info = pd.DataFrame(columns=['player_id', 'track_id', 'multimodal_id', 'mode'])
     df_nearest_edges = pd.DataFrame(columns=['track_id', 'node_id', 'way_id', 'timestamp', 'h3', 'ordinal'])
 
     #track_modes = ["walk", "bike", "bus", "train", "car"]
@@ -151,7 +152,12 @@ def import_nearest_edges_by_ox(territory_id, start_time, end_time=None, save_csv
                 df_tracks.loc[0] = [track_id, trace_route.shape]
             else:
                 df_tracks.loc[df_tracks.index.max() + 1] = [track_id, trace_route.shape]
-            
+
+            if df_tracks_info.empty:
+                df_tracks_info.loc[0] = [track['userId'], track_id, track['multimodalId'], track['freeTrackingTransport']]
+            else:
+                df_tracks_info.loc[df_tracks_info.index.max() + 1] = [track['userId'], track_id, track['multimodalId'], track['freeTrackingTransport']]
+
             if len(trace_route.trace_infos) > 0:
                 lon_array =[]
                 lat_array =[]
@@ -196,6 +202,12 @@ def import_nearest_edges_by_ox(territory_id, start_time, end_time=None, save_csv
     print(f"Imported Tracks Rows: {rows}, Columns: {columns}")
     file_storage.merge_tracks(territory_id, year, df_tracks, save_csv)
     info_map = {"name": file_storage.tracks, "rows": rows}
+    infos.append(info_map)
+
+    rows, columns = df_tracks_info.shape
+    print(f"Imported Tracks Info Rows: {rows}, Columns: {columns}")
+    file_storage.merge_tracks_info(territory_id, year, df_tracks_info, save_csv)
+    info_map = {"name": file_storage.tracks_info, "rows": rows}
     infos.append(info_map)
 
     rows, columns = df_way_shapes.shape

@@ -314,6 +314,12 @@ def get_df_info_list(territory_id:str, year:str):
         print(f"File not found for nearest_edges in territory {territory_id} for year {year}")
 
     try:
+        df_info = get_df_info(file_storage, territory_id, file_storage.nearest_edges_ox, year)
+        info_list.append(df_info)
+    except FileNotFoundError:
+        print(f"File not found for nearest_edges_ox in territory {territory_id} for year {year}")
+
+    try:
         df_info = get_df_info(file_storage, territory_id, file_storage.way_shapes)
         info_list.append(df_info)
     except FileNotFoundError:

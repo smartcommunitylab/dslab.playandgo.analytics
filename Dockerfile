@@ -4,10 +4,7 @@ WORKDIR /app
 RUN apt update && apt install -y build-essential
 RUN pip install -r requirements.txt
 COPY data/ /app/data/
-COPY playandgo/ /app/playandgo/
-COPY storage/ /app/storage/
-COPY valhalla/ /app/valhalla/
-COPY import-tracks-data.py /app/import-tracks-data.py
+COPY . /app/
 ENV USER=analytics
 ENV GROUPNAME=$USER
 ENV UID=12345

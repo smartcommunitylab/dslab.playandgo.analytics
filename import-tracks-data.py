@@ -133,7 +133,6 @@ def import_nearest_edges_by_ox(territory_id, start_time, track_modes, end_time=N
     df_nearest_edges = pd.DataFrame(columns=['track_id', 'node_id', 'way_id', 'timestamp', 'h3', 'ordinal'])
 
     #track_modes = ["walk", "bike", "bus", "train", "car"]
-    #track_modes = ["walk", "bike", "bus"]
 
     for track_mode in track_modes:
         try:

@@ -116,7 +116,7 @@ def import_nearest_edges_by_trace(territory_id, start_time, end_time=None, save_
     return infos
 
 
-def import_nearest_edges_by_ox(territory_id, start_time, end_time=None, save_csv=False):
+def import_nearest_edges_by_ox(territory_id, start_time, track_modes, end_time=None, save_csv=False):
     playandgo_engine = PlayAndGoEngine()
     valhalla_engine = ValhallaEngine()
     file_storage = FileStorage()
@@ -133,7 +133,7 @@ def import_nearest_edges_by_ox(territory_id, start_time, end_time=None, save_csv
     df_nearest_edges = pd.DataFrame(columns=['track_id', 'node_id', 'way_id', 'timestamp', 'h3', 'ordinal'])
 
     #track_modes = ["walk", "bike", "bus", "train", "car"]
-    track_modes = ["walk", "bike", "bus"]
+    #track_modes = ["walk", "bike", "bus"]
 
     for track_mode in track_modes:
         try:
@@ -388,9 +388,10 @@ def api_import_nearest_edges_by_ox():
     start = datetime.now()
     territory_id = request.args.get('territory_id', type=str)
     start_time = request.args.get('start_time', type=str)
+    track_modes = request.args.getlist('mode', type=str)
     end_time = request.args.get('end_time', default=None, type=str)
     save_csv = request.args.get('save_csv', default=False, type=bool)
-    info_map = import_nearest_edges_by_ox(territory_id, start_time, end_time, save_csv)
+    info_map = import_nearest_edges_by_ox(territory_id, start_time, track_modes, end_time, save_csv)
     stop = datetime.now()
     print(f"api_import_nearest_edges_by_ox Territory ID: {territory_id}, Time:{(stop - start).total_seconds()} seconds")
     return info_map

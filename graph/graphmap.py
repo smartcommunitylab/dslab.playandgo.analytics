@@ -17,6 +17,8 @@ class GraphMap:
         match territory_id.upper():
             case "FERRARA":
                 return "data/osm/ferrara.osm.pbf"
+            case "L":
+                return "data/osm/lecco.osm.pbf"
             case _:
                 return None
 
@@ -45,12 +47,13 @@ class GraphMap:
         osm_file = self.get_osm_file(territory_id)
         if not osm_file:
             raise ValueError(f"No OSM file found for territory ID: {territory_id}")
+        print(f"{datetime.isoformat(datetime.now())} Start loading Graph - Territory ID: {territory_id}, Mode: {mode_type}")
         start = datetime.now()
         osm = pyrosm.OSM(osm_file)
         nodes, edges = osm.get_network(nodes=True, network_type=network_type)
         G = osm.to_graph(nodes, edges, graph_type="networkx")
         stop = datetime.now()
-        print(f"{datetime.isoformat(datetime.now())} Territory ID: {territory_id}, Mode: {mode_type}, Time:{(stop - start).total_seconds()} seconds")
+        print(f"{datetime.isoformat(datetime.now())} Graph loaded - Territory ID: {territory_id}, Mode: {mode_type}, Time:{(stop - start).total_seconds()} seconds")
         return G
 
 

@@ -52,18 +52,17 @@ class GraphMap:
         start = datetime.now()
         osm = pyrosm.OSM(osm_file)
         nodes, edges = osm.get_network(nodes=True, network_type=network_type)
-        G = osm.to_graph(nodes, edges, graph_type="networkx")
+        self.G = osm.to_graph(nodes, edges, graph_type="networkx")
         stop = datetime.now()
         print(f"{datetime.isoformat(datetime.now())} Graph loaded - Territory ID: {territory_id}, Mode: {mode_type}, Time:{(stop - start).total_seconds()} seconds")
-        return G
 
 
-    def find_nearest_nodes(self, G, lon_array, lat_array, track_id):
+    def find_nearest_nodes(self, lon_array, lat_array, track_id):
         """
         Find the nearest edges in the graph for the given points.
         """
         start = datetime.now()
-        nearest_nodes = ox.distance.nearest_nodes(G, lon_array, lat_array, return_dist=False)
+        nearest_nodes = ox.distance.nearest_nodes(self.G, lon_array, lat_array, return_dist=False)
         stop = datetime.now()
         print(f"{datetime.isoformat(datetime.now())} Track ID: {track_id}, Nodes: {len(nearest_nodes)}, Time:{(stop - start).total_seconds()} seconds")
         return nearest_nodes

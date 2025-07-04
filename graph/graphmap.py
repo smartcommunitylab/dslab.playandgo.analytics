@@ -1,6 +1,9 @@
 import pyrosm 
 import osmnx as ox
 
+import json
+import os
+
 from datetime import datetime
 
 
@@ -14,13 +17,11 @@ class GraphMap:
     
 
     def get_osm_file(self, territory_id: str):
-        match territory_id.upper():
-            case "FERRARA":
-                return "data/osm/ferrara.osm.pbf"
-            case "L":
-                return "data/osm/lecco.osm.pbf"
-            case _:
-                return None
+        file_path = "data/territory_map.json"
+        if os.path.exists(file_path):
+            with open(file_path, "r", encoding="utf-8") as file:
+                territory_map = json.load(file)  
+                return territory_map.get(territory_id.upper(), None)            
 
 
     def get_network_type(self, mode_type: str):

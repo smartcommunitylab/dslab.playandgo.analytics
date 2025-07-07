@@ -13,6 +13,7 @@ class FileStorage:
         self.nearest_edges = "nearest_edges"
         self.way_shapes = "way_shapes"
         self.h3_info = "h3_info"
+        self.mapped_edges = "mapped_edges"
 
 
     def check_directory(self, territory_id:str):
@@ -155,6 +156,22 @@ class FileStorage:
             print(f"Storage Rows: {rows}, Columns: {columns}")
             if save_csv:
                 self.save_csv(file_path, df)
+
+
+    def merge_mapped_edges(self, territory_id:str, year:str, save_csv:bool=False):
+        """Merge data to a file."""
+        self.check_directory(territory_id)
+        try:
+            s, df_nearest_edges = self.load_dataframe(territory_id, self.nearest_edges, year)
+            s, df_h3_info = self.load_dataframe(territory_id, self.h3_info, year)
+            # Merge dei due dataframe sulle colonne 'track_id' e 'ordinal'
+            df_merged = pd.merge(df_h3_info, df_nearest_edges, on=['track_id', 'ordinal'], how='inner')
+            file_path = self.get_filename(territory_id, self.mapped_edges, year)
+            df_merged.to_parquet(file_path, engine="pyarrow") 
+            if save_csv:
+                self.save_csv(file_path, df_merged)
+        except FileNotFoundError:
+            raise FileNotFoundError(f"Required files for merging mapped edges not found for territory {territory_id} and year {year}.")
 
 
     def merge_dataframes(self, df_old:pd.DataFrame, df_new:pd.DataFrame, columns_sub) -> pd.DataFrame:

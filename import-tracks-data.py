@@ -71,7 +71,7 @@ def extract_track_data_osm(track, df_tracks, df_tracks_info, df_way_shapes, df_n
             lat_array.append(trace_info.lat) 
 
         nearest_node = graph_map.find_nearest_nodes(lon_array, lat_array, track_id)
-        res = 11  # H3 resolution level
+        res = 13  # H3 resolution level
         for index, node_id in enumerate(nearest_node):
             trace_info = trace_route.trace_infos[index]
             cell = h3.latlng_to_cell(lat_array[index], lon_array[index], res)
@@ -305,6 +305,16 @@ def get_df_info_list(territory_id:str, year:str):
     return info_list
 
 
+def merge_edges(territory_id:str, year:str, save_csv=False):
+    file_storage = FileStorage()
+    try:
+        file_storage.merge_mapped_edges(territory_id, year, save_csv)
+        df_info = get_df_info(file_storage, territory_id, file_storage.mapped_edges, year)
+        return df_info
+    except FileNotFoundError:
+        print(f"File not found for campaign_subscriptions in territory {territory_id} for year {year}")
+
+
 app = Flask(__name__)
 server_port = os.getenv("SERVER_PORT", 8078)
 
@@ -357,6 +367,18 @@ def api_info_df():
     info_map = get_df_info_list(territory_id, year)
     stop = datetime.now()
     print(f"api_info_df Territory ID: {territory_id}, Time:{(stop - start).total_seconds()} seconds")
+    return info_map
+
+
+@app.route('/api/import/merge-edges', methods=['GET'])
+def api_map_nodes():
+    start = datetime.now()
+    territory_id = request.args.get('territory_id', type=str)
+    year = request.args.get('year', type=str)
+    save_csv = request.args.get('save_csv', default=False, type=bool)
+    info_map = merge_edges(territory_id, year, save_csv)
+    stop = datetime.now()
+    print(f"api_map_nodes Territory ID: {territory_id}, Time:{(stop - start).total_seconds()} seconds")
     return info_map
 
 

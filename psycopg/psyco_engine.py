@@ -1,6 +1,9 @@
 from sqlalchemy import create_engine, insert, delete
 from sqlalchemy import MetaData, Table, Column, DateTime, Integer, BigInteger, String
 
+import pandas as pd
+
+import h3
 import os
 
 class PsycoEngine:
@@ -92,3 +95,40 @@ class PsycoEngine:
             conn.execute(insert_stmt)
             conn.commit()
             
+
+    def import_nearest_edges(self, territory_id, df_nearest_edges, df_h3_info, h3_parent_res):
+        df_merged = pd.merge(df_h3_info, df_nearest_edges, on=['track_id', 'ordinal'], how='inner')
+        
+        edges = []
+        track_ids = []
+        last_track_id = ""
+        for row in df_merged.itertuples():
+            track_id = row.track_id
+            way_id = row.way_id
+            if track_id != last_track_id:
+                last_track_id = track_id
+                track_ids.append(track_id)
+                last_way_id = 0
+                index = 0
+            if way_id != last_way_id:
+                last_way_id = way_id
+                h3_parent = h3.cell_to_parent(row.h3, h3_parent_res)
+                edges.append((territory_id, track_id, way_id, row.h3, h3_parent, index))
+                index += 1
+
+        delete_stmt = delete(self.nearest_edges_table).where(self.nearest_edges_table.c.territory_id == territory_id).where(self.nearest_edges_table.c.track_id.in_(track_ids)) 
+        
+        insert_stmt = insert(self.nearest_edges_table).values(            
+            [{
+                "territory_id": territory_id, 
+                "track_id": track_id, 
+                "way_id": way_id,
+                "h3_cell": h3_cell,
+                "h3_parent": h3_parent,
+                "ordinal": ordinal
+            } for territory_id, track_id, way_id, h3_cell, h3_parent, ordinal in edges])
+        
+        with self.getConnection() as conn:
+            conn.execute(delete_stmt)
+            conn.execute(insert_stmt)
+            conn.commit()

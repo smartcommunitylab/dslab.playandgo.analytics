@@ -40,9 +40,9 @@ def extract_track_data_osm(track, df_tracks, df_tracks_info, df_way_shapes, df_n
     track_id = str(track["_id"])
 
     if df_tracks_info.empty:
-        df_tracks_info.loc[0] = [track['userId'], track_id, track['multimodalId'], track['freeTrackingTransport']]
+        df_tracks_info.loc[0] = [track['userId'], track_id, track['multimodalId'], track['freeTrackingTransport'], get_utc_datetime(track['startTime'])]
     else:
-        df_tracks_info.loc[df_tracks_info.index.max() + 1] = [track['userId'], track_id, track['multimodalId'], track['freeTrackingTransport']]
+        df_tracks_info.loc[df_tracks_info.index.max() + 1] = [track['userId'], track_id, track['multimodalId'], track['freeTrackingTransport'], get_utc_datetime(track['startTime'])]
 
     trace_route = valhalla_engine.find_nearest_edges_by_trace(track, track_id) 
 
@@ -93,9 +93,9 @@ def extract_track_data_h3(track, df_tracks_info, df_h3_info):
     track_id = str(track["_id"])
 
     if df_tracks_info.empty:
-        df_tracks_info.loc[0] = [track['userId'], track_id, track['multimodalId'], track['freeTrackingTransport']]
+        df_tracks_info.loc[0] = [track['userId'], track_id, track['multimodalId'], track['freeTrackingTransport'], get_utc_datetime(track['startTime'])]
     else:
-        df_tracks_info.loc[df_tracks_info.index.max() + 1] = [track['userId'], track_id, track['multimodalId'], track['freeTrackingTransport']]
+        df_tracks_info.loc[df_tracks_info.index.max() + 1] = [track['userId'], track_id, track['multimodalId'], track['freeTrackingTransport'], get_utc_datetime(track['startTime'])]
 
     points = convert_tracked_instance_to_points(track)    
     sorted_points = sorted(points, key=lambda x: x["time"])
@@ -111,7 +111,6 @@ def extract_track_data_h3(track, df_tracks_info, df_h3_info):
     print(f"{datetime.isoformat(datetime.now())} Track ID: {track_id}, Time:{(stop - start).total_seconds()} seconds")
 
 
-
 def import_nearest_edges_by_trace(territory_id, start_time, track_modes, end_time=None, save_csv=False):
     playandgo_engine = PlayAndGoEngine()
     valhalla_engine = ValhallaEngine()
@@ -125,7 +124,7 @@ def import_nearest_edges_by_trace(territory_id, start_time, track_modes, end_tim
     except FileNotFoundError:
         df_way_shapes = pd.DataFrame(columns=['way_id', 'shape'])
     df_tracks = pd.DataFrame(columns=['track_id', 'shape'])
-    df_tracks_info = pd.DataFrame(columns=['player_id', 'track_id', 'multimodal_id', 'mode'])
+    df_tracks_info = pd.DataFrame(columns=['player_id', 'track_id', 'multimodal_id', 'mode', 'start_time'])
     df_nearest_edges = pd.DataFrame(columns=['track_id', 'node_id', 'way_id', 'ordinal'])
     df_h3_info = pd.DataFrame(columns=['track_id', 'h3', 'timestamp', 'ordinal'])
 

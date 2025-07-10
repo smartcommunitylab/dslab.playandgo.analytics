@@ -1,5 +1,5 @@
 from sqlalchemy import create_engine, insert, delete
-from sqlalchemy import MetaData, Table, Column, DateTime, Integer, BigInteger, String
+from sqlalchemy import MetaData, Table, Column, DateTime, Integer, BigInteger, String, Boolean
 
 import pandas as pd
 
@@ -54,6 +54,23 @@ class PsycoEngine:
             Column("h3_cell", String(50)),
             Column("h3_parent", String(50)),
             Column("ordinal", Integer)
+        )
+
+        self.campaign_tracks_table = Table(
+            "campaign_tracks",
+            self.metadata_obj,
+            Column("id", BigInteger, primary_key=True),
+            Column("territory_id", String(250), index=True),
+            Column("track_id", String(250)),
+            Column("player_id", String(250)),
+            Column("campaign_id", String(250), index=True),
+            Column("campaign_type", String(50)),
+            Column("mode", String(50)),
+            Column("start_time", DateTime, index=True),
+            Column("end_time", DateTime),
+            Column("distance", Integer),
+            Column("duration", Integer),
+            Column("validation_result", Boolean)
         )
 
         self.metadata_obj.create_all(self.getEngine(), checkfirst=True)
@@ -130,5 +147,41 @@ class PsycoEngine:
         
         with self.getConnection() as conn:
             conn.execute(delete_stmt)
+            conn.execute(insert_stmt)
+            conn.commit()
+
+
+    def import_campaign_tracks(self, territory_id, df_campaign_tracks):
+        """
+        Imports campaign tracks into the database.
+        """
+        tracks = []
+        for row in df_campaign_tracks.itertuples():
+            tracks.append((territory_id, row.track_id, row.player_id, row.campaign_id, row.campaign_type, row.mode, 
+                              row.start_time, row.end_time, row.distance, row.duration, row.validation_result))
+
+        insert_stmt = insert(self.campaign_tracks_table).values(            
+            [{
+                "territory_id": territory_id, 
+                "track_id": track_id, 
+                "player_id": player_id,
+                "campaign_id": campaign_id,
+                "campaign_type": campaign_type,
+                "mode": mode,
+                "start_time": start_time,
+                "end_time": end_time,
+                "distance": distance,
+                "duration": duration,
+                "validation_result": validation_result
+            } for territory_id, track_id, player_id, campaign_id, campaign_type, mode, start_time, end_time, distance, duration, validation_result in tracks])
+        
+        with self.getConnection() as conn:
+            for territory_id, track_id, player_id, campaign_id, campaign_type, mode, start_time, end_time, distance, duration, validation_result in tracks:
+                delete_stmt = delete(self.campaign_tracks_table)\
+                    .where(self.campaign_tracks_table.c.territory_id == territory_id)\
+                    .where(self.campaign_tracks_table.c.track_id == track_id)\
+                    .where(self.campaign_tracks_table.c.player_id == player_id)\
+                    .where(self.campaign_tracks_table.c.campaign_id == campaign_id)
+                conn.execute(delete_stmt)
             conn.execute(insert_stmt)
             conn.commit()

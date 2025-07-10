@@ -73,6 +73,18 @@ class PsycoEngine:
             Column("validation_result", Boolean)
         )
 
+        self.campaign_subscriptions_table = Table(
+            "campaign_subscriptions",
+            self.metadata_obj,
+            Column("id", BigInteger, primary_key=True),
+            Column("territory_id", String(250), index=True),
+            Column("player_id", String(250)),
+            Column("campaign_id", String(250), index=True),
+            Column("campaign_type", String(50)),
+            Column("group_id", String(50)),
+            Column("registration_date", DateTime)
+        )
+
         self.metadata_obj.create_all(self.getEngine(), checkfirst=True)
 
 
@@ -182,6 +194,35 @@ class PsycoEngine:
                     .where(self.campaign_tracks_table.c.track_id == track_id)\
                     .where(self.campaign_tracks_table.c.player_id == player_id)\
                     .where(self.campaign_tracks_table.c.campaign_id == campaign_id)
+                conn.execute(delete_stmt)
+            conn.execute(insert_stmt)
+            conn.commit()
+
+
+    def import_campaign_subscriptions(self, territory_id, df_campaign_subscriptions):
+        """
+        Imports campaign subscriptions into the database.
+        """
+        subscriptions = []
+        for row in df_campaign_subscriptions.itertuples():
+            subscriptions.append((territory_id, row.player_id, row.campaign_id, row.campaign_type, row.group_id, row.registration_date))
+
+        insert_stmt = insert(self.campaign_subscriptions_table).values(            
+            [{
+                "territory_id": territory_id, 
+                "player_id": player_id,
+                "campaign_id": campaign_id,
+                "campaign_type": campaign_type,
+                "group_id": group_id,
+                "registration_date": registration_date
+            } for territory_id, player_id, campaign_id, campaign_type, group_id, registration_date in subscriptions])
+        
+        with self.getConnection() as conn:
+            for territory_id, player_id, campaign_id, campaign_type, group_id, registration_date in subscriptions:
+                delete_stmt = delete(self.campaign_subscriptions_table)\
+                    .where(self.campaign_subscriptions_table.c.territory_id == territory_id)\
+                    .where(self.campaign_subscriptions_table.c.player_id == player_id)\
+                    .where(self.campaign_subscriptions_table.c.campaign_id == campaign_id)
                 conn.execute(delete_stmt)
             conn.execute(insert_stmt)
             conn.commit()

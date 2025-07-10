@@ -138,12 +138,19 @@ def import_nearest_edges_by_trace(territory_id, start_time, track_modes, end_tim
                 print(f"Error loading graph for territory {territory_id} with mode {track_mode}: {e}")
                 continue
 
+            count = 0
             for track in playandgo_engine.get_tracks(territory_id, start_time, end_time, track_mode):
                 extract_track_data_osm(track, df_tracks, df_tracks_info, df_way_shapes, df_nearest_edges, df_h3_info, valhalla_engine, graph_map)
+                print(f"Track {track_mode} {count} processed.")
+                count += 1
 
-    else:
-        for track in playandgo_engine.get_tracks(territory_id, start_time, end_time, track_mode):
-            extract_track_data_h3(track, df_tracks_info, df_h3_info)
+        else:
+            count = 0
+            for track in playandgo_engine.get_tracks(territory_id, start_time, end_time, track_mode):
+                extract_track_data_h3(track, df_tracks_info, df_h3_info)
+                print(f"Track {track_mode} {count} processed.")
+                count += 1
+
 
     start_time_dt = datetime.fromisoformat(start_time)
     year = start_time_dt.strftime("%Y")

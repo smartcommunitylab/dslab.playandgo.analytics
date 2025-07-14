@@ -1,10 +1,12 @@
-from sqlalchemy import create_engine, insert, delete
+from sqlalchemy import create_engine, insert, delete, select
 from sqlalchemy import MetaData, Table, Column, DateTime, Integer, BigInteger, String, Boolean
 
 import pandas as pd
 
 import h3
 import os
+from datetime import datetime
+from datetime import timezone
 
 class PsycoEngine:
     def __init__(self):
@@ -51,8 +53,7 @@ class PsycoEngine:
             Column("territory_id", String(250), index=True),
             Column("track_id", String(250), index=True),
             Column("way_id", String(50)),
-            Column("h3_cell", String(50)),
-            Column("h3_parent", String(50)),
+            Column("h3", String(50)),
             Column("ordinal", Integer)
         )
 
@@ -125,7 +126,7 @@ class PsycoEngine:
             conn.commit()
             
 
-    def import_nearest_edges(self, territory_id, df_nearest_edges, df_h3_info, h3_parent_res):
+    def import_nearest_edges(self, territory_id, df_nearest_edges, df_h3_info):
         df_merged = pd.merge(df_h3_info, df_nearest_edges, on=['track_id', 'ordinal'], how='inner')
         
         edges = []
@@ -141,8 +142,7 @@ class PsycoEngine:
                 index = 0
             if way_id != last_way_id:
                 last_way_id = way_id
-                h3_parent = h3.cell_to_parent(row.h3, h3_parent_res)
-                edges.append((territory_id, track_id, way_id, row.h3, h3_parent, index))
+                edges.append((territory_id, track_id, way_id, row.h3, index))
                 index += 1
 
         delete_stmt = delete(self.nearest_edges_table).where(self.nearest_edges_table.c.territory_id == territory_id).where(self.nearest_edges_table.c.track_id.in_(track_ids)) 
@@ -152,10 +152,9 @@ class PsycoEngine:
                 "territory_id": territory_id, 
                 "track_id": track_id, 
                 "way_id": way_id,
-                "h3_cell": h3_cell,
-                "h3_parent": h3_parent,
+                "h3": h3,
                 "ordinal": ordinal
-            } for territory_id, track_id, way_id, h3_cell, h3_parent, ordinal in edges])
+            } for territory_id, track_id, way_id, h3, ordinal in edges])
         
         with self.getConnection() as conn:
             conn.execute(delete_stmt)
@@ -226,3 +225,30 @@ class PsycoEngine:
                 conn.execute(delete_stmt)
             conn.execute(insert_stmt)
             conn.commit()
+    
+
+    def get_h3_info(self, territory_id, year, mode='all'):
+        """
+        Retrieves H3 information for a given territory and year.
+        """
+        start_date, end_date = get_year_bounds(year)
+        with self.getConnection() as conn:
+            query = select(self.nearest_edges_table).select_from(self.nearest_edges_table)\
+                .where(self.nearest_edges_table.c.track_id == self.track_info_table.c.track_id)\
+                .where(self.track_info_table.c.territory_id == territory_id)\
+                .where(self.track_info_table.c.start_time >= start_date)\
+                .where(self.track_info_table.c.start_time <= end_date)
+            if mode != 'all':
+                query = query.where(self.track_info_table.c.mode == mode)  
+            query = query.order_by(self.nearest_edges_table.c.track_id, self.nearest_edges_table.c.ordinal)
+            result = conn.execute(query)
+            return pd.DataFrame(result.fetchall(), columns=result.keys())
+
+
+def get_year_bounds(year):
+    # year può essere una stringa o un intero
+    year_int = int(year)
+    start_date = datetime(year_int, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
+    end_date = datetime(year_int, 12, 31, 23, 59, 59, tzinfo=timezone.utc)
+    return start_date, end_date
+

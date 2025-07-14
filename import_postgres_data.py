@@ -17,15 +17,15 @@ if __name__ == "__main__":
     #print("Track information imported successfully.")
 
     # Import nearest edges into the database
-    #size, df_nearest_edges = file_storage.load_dataframe(territory_id, file_storage.nearest_edges, "2025")
-    #size, df_h3_info = file_storage.load_dataframe(territory_id, file_storage.h3_info, "2025")
-    #engine.import_nearest_edges(territory_id, df_nearest_edges, df_h3_info, 8)
-    #print("Track Edges imported successfully.")
+    size, df_nearest_edges = file_storage.load_dataframe(territory_id, file_storage.nearest_edges, "2025")
+    size, df_h3_info = file_storage.load_dataframe(territory_id, file_storage.h3_info, "2025")
+    engine.import_nearest_edges(territory_id, df_nearest_edges, df_h3_info)
+    print("Track Edges imported successfully.")
 
     #size, df_campaign_tracks = file_storage.load_dataframe(territory_id, file_storage.campaign_tracks, "2025")
     #engine.import_campaign_tracks(territory_id, df_campaign_tracks)
     #print("Campaign Tracks imported successfully.")    
 
-    size, df_campaign_subscriptions = file_storage.load_dataframe(territory_id, file_storage.campaign_subscriptions, "2025")
-    engine.import_campaign_subscriptions(territory_id, df_campaign_subscriptions)
-    print("Campaign Subscriptions imported successfully.")    
+    #size, df_campaign_subscriptions = file_storage.load_dataframe(territory_id, file_storage.campaign_subscriptions, "2025")
+    #engine.import_campaign_subscriptions(territory_id, df_campaign_subscriptions)
+    #print("Campaign Subscriptions imported successfully.")    

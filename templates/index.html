@@ -28,6 +28,12 @@
         </label>
         <button onclick="loadGeoJson()">Load</button>
     </div>
+    <!-- Loader -->
+    <div id="loader" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:999;">
+        <span style="background:#fff;padding:20px 40px;border-radius:8px;box-shadow:0 0 10px #aaa;font-size:1.2em;">
+            Caricamento...
+        </span>
+    </div>
     <div id="map"></div>
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -43,6 +49,10 @@
 
         var geoJsonLayer = null;
 
+        function showLoader(show) {
+            document.getElementById('loader').style.display = show ? 'block' : 'none';
+        }
+
         function loadGeoJson() {
             var territory_id = document.getElementById('territory_id').value;
             var year = document.getElementById('year').value;
@@ -51,6 +61,7 @@
 
             var url = `/api/geo/h3?territory_id=${encodeURIComponent(territory_id)}&year=${encodeURIComponent(year)}&target_resolution=${encodeURIComponent(target_resolution)}&mode=${encodeURIComponent(mode)}`;
 
+            showLoader(true);
             fetch(url)
                 .then(response => response.json())
                 .then(data => {
@@ -78,10 +89,12 @@
                     if (geoJsonLayer.getBounds().isValid()) {
                         map.fitBounds(geoJsonLayer.getBounds());
                     }
+                    showLoader(false);
                 })
                 .catch(error => {
                     alert("Errore nel caricamento dei dati GeoJSON.");
                     console.error(error);
+                    showLoader(false);
                 });
         }
     </script>

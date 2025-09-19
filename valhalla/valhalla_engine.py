@@ -224,7 +224,7 @@ class ValhallaEngine:
                     for index, matched_point in enumerate(data_trace["matched_points"]):
                         if matched_point["type"] == "matched":
                             edge_index = matched_point["edge_index"]
-                            if edge_index > len(data_edges):
+                            if edge_index >= len(data_edges):
                                 continue
                             trace_info = TraceInfo(
                                 edge_index=edge_index,

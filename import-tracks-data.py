@@ -133,7 +133,7 @@ def import_nearest_edges_by_trace(territory_id, start_time, track_modes, end_tim
     for track_mode in track_modes:
         if track_mode != "train":
             try:
-                graph_map.load_graph(territory_id, track_mode)
+                graph_map.load_graph_from_bbox(territory_id, track_mode)
             except ValueError as e:
                 print(f"Error loading graph for territory {territory_id} with mode {track_mode}: {e}")
                 continue
@@ -349,8 +349,8 @@ def api_import_nearest_edges_by_trace():
     start = datetime.now()
     territory_id = request.args.get('territory_id', type=str)
     start_time = request.args.get('start_time', type=str)
-    track_modes = request.args.getlist('mode', type=str)
     end_time = request.args.get('end_time', default=None, type=str)
+    track_modes = request.args.getlist('mode', type=str)
     save_csv = request.args.get('save_csv', default=False, type=bool)
     info_map = import_nearest_edges_by_trace(territory_id, start_time, track_modes, end_time, save_csv)
     stop = datetime.now()

@@ -104,3 +104,13 @@ class GraphMap:
         stop = datetime.now()
         print(f"{datetime.isoformat(datetime.now())} Track ID: {track_id}, Nodes: {len(nearest_nodes)}, Time:{(stop - start).total_seconds()} seconds")
         return nearest_nodes
+    
+
+    def find_nearest_nodes(self, lon, lat):
+        return ox.distance.nearest_nodes(self.G, lon, lat, return_dist=False)
+
+
+    def is_point_in_bbox(self, lon: float, lat: float, bbox: list[float]) -> bool:
+        min_lon, min_lat, max_lon, max_lat = bbox
+        return (min_lat <= lat <= max_lat) and (min_lon <= lon <= max_lon)
+

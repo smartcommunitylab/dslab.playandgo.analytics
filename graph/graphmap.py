@@ -90,7 +90,8 @@ class GraphMap:
         print(f"{datetime.isoformat(datetime.now())} Start loading Graph BBOX - Territory ID: {territory_id}, Mode: {mode_type}")
         start = datetime.now()
         bbox = self.get_bbox(territory_id)
-        self.G = ox.graph_from_bbox(bbox, network_type=network_type)
+        ox.settings.use_cache = False
+        self.G = ox.graph.graph_from_bbox(bbox, network_type=network_type)
         stop = datetime.now()
         print(f"{datetime.isoformat(datetime.now())} Graph loaded from BBOX - Territory ID: {territory_id}, Mode: {mode_type}, Time:{(stop - start).total_seconds()} seconds")
 

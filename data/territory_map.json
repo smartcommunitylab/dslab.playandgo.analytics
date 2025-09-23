@@ -3,11 +3,11 @@
         "bbox": [11.045, 44.825, 11.75, 45.25],
         "file": "data/osm/ferrara.osm.pbf"
     },
-    "L": {
+    "L_SMALL": {
         "bbox": [9.308, 45.802, 9.492, 45.889], 
         "file": "data/osm/lecco.osm.pbf"
     },
-    "L_TOT": {
+    "L": {
         "bbox": [8.95, 45.65, 9.65, 46.25], 
         "file": "data/osm/lecco.osm.pbf"
     }

@@ -14,6 +14,7 @@ class FileStorage:
         self.way_shapes = "way_shapes"
         self.h3_info = "h3_info"
         self.mapped_edges = "mapped_edges"
+        self.mapped_campaign_tracks = "mapped_campaign_tracks"
 
 
     def check_directory(self, territory_id:str):
@@ -167,6 +168,46 @@ class FileStorage:
             # Merge dei due dataframe sulle colonne 'track_id' e 'ordinal'
             df_merged = pd.merge(df_h3_info, df_nearest_edges, on=['track_id', 'ordinal'], how='inner')
             file_path = self.get_filename(territory_id, self.mapped_edges, year)
+            df_merged.to_parquet(file_path, engine="pyarrow") 
+            if save_csv:
+                self.save_csv(file_path, df_merged)
+        except FileNotFoundError:
+            raise FileNotFoundError(f"Required files for merging mapped edges not found for territory {territory_id} and year {year}.")
+
+
+    def merge_campaign_tracks(self, territory_id:str, year:str, campaign_id:str, save_csv:bool=False):
+        """Merge data to a file."""
+        self.check_directory(territory_id)
+        try:
+            s, df_campaign_tracks = self.load_dataframe(territory_id, self.campaign_tracks, year)
+            print(f"Campaign Tracks Rows: {df_campaign_tracks.shape[0]}")
+            s, df_campaign_subscriptions = self.load_dataframe(territory_id, self.campaign_subscriptions, year)
+            print(f"Campaign Subscriptions Rows: {df_campaign_subscriptions.shape[0]}")
+
+            # Filtra per campaign_id
+            df_campaign_tracks = df_campaign_tracks[df_campaign_tracks['campaign_id'] == campaign_id]
+            print(f"Filtered Campaign Tracks Rows: {df_campaign_tracks.shape[0]}")
+            df_campaign_subscriptions = df_campaign_subscriptions[df_campaign_subscriptions['campaign_id'] == campaign_id]
+            print(f"Filtered Campaign Subscriptions Rows: {df_campaign_subscriptions.shape[0]}")
+
+            # Trova i player_id presenti in df_campaign_subscriptions
+            #player_ids_subs = df_campaign_subscriptions['player_id'].unique()
+            # Seleziona le righe di df_campaign_tracks con player_id non presente in df_campaign_subscriptions
+            #tracks_not_in_subs = df_campaign_tracks[~df_campaign_tracks['player_id'].isin(player_ids_subs)]
+            #print(tracks_not_in_subs)
+
+            # Seleziona solo le colonne chiave + group_id dal secondo dataframe
+            df_campaign_subscriptions = df_campaign_subscriptions[['territory_id', 'player_id', 'campaign_id', 'group_id']]
+
+            # Merge sulle colonne territory_id, player_id, campaign_id
+            df_merged = pd.merge(
+                df_campaign_tracks,
+                df_campaign_subscriptions,
+                on=['territory_id', 'player_id', 'campaign_id'],
+                how='inner'
+            )  
+
+            file_path = self.get_filename(territory_id, self.mapped_campaign_tracks, year)
             df_merged.to_parquet(file_path, engine="pyarrow") 
             if save_csv:
                 self.save_csv(file_path, df_merged)

@@ -1,11 +1,6 @@
-import os
-
-import numpy as np
 import pandas as pd
 
 import h3
-
-from flask import Flask, request, Response
 
 from datetime import datetime
 from datetime import timezone
@@ -196,6 +191,7 @@ def import_nearest_edges_by_trace(territory_id, start_time, track_modes, end_tim
 
 
 def import_campaign_tracks_data(territory_id, start_time, end_time=None, save_csv=False):
+    print(f"import_campaign_tracks_data")
     # Inizializza gli engine
     playandgo_engine = PlayAndGoEngine()
     file_storage = FileStorage()
@@ -211,6 +207,7 @@ def import_campaign_tracks_data(territory_id, start_time, end_time=None, save_cs
                 df.loc[0] = vars(c_track)
             else:
                 df.loc[df.index.max() + 1] = vars(c_track)
+            print(f"Processed campaign track: {c_track.track_id}")
         except Exception as e:
             print(f"Error processing campaign track: {c_track.track_id}, Error: {e}")
             continue
@@ -240,6 +237,7 @@ def import_campaign_subscriptions_data(territory_id, start_time, end_time=None, 
                 df.loc[0] = vars(c_subscription)
             else:
                 df.loc[df.index.max() + 1] = vars(c_subscription)
+            print(f"Processed campaign subscription: {c_subscription.player_id}, {c_subscription.campaign_id}")
         except Exception as e:
             print(f"Error processing campaign subscription: {c_subscription.campaign_id}, Error: {e}")
             continue
@@ -326,80 +324,11 @@ def merge_edges(territory_id:str, year:str, save_csv=False):
         print(f"File not found for campaign_subscriptions in territory {territory_id} for year {year}")
 
 
-app = Flask(__name__)
-server_port = os.getenv("SERVER_PORT", 8078)
-
-
-@app.route('/api/import/campaign-tracks', methods=['GET'])
-def api_import_campaign_tracks_data():
-    start = datetime.now()
-    territory_id = request.args.get('territory_id', type=str)
-    start_time = request.args.get('start_time', type=str)
-    end_time = request.args.get('end_time', default=None, type=str)
-    save_csv = request.args.get('save_csv', default=False, type=bool)
-    info_map = import_campaign_tracks_data(territory_id, start_time, end_time, save_csv)
-    stop = datetime.now()
-    print(f"api_import_campaign_tracks_data Territory ID: {territory_id}, Time:{(stop - start).total_seconds()} seconds")
-    return info_map
-
-
-@app.route('/api/import/campaign-subs', methods=['GET'])
-def api_import_campaign_subscriptions_data():
-    start = datetime.now()
-    territory_id = request.args.get('territory_id', type=str)
-    start_time = request.args.get('start_time', type=str)
-    end_time = request.args.get('end_time', default=None, type=str)
-    save_csv = request.args.get('save_csv', default=False, type=bool)
-    info_map = import_campaign_subscriptions_data(territory_id, start_time, end_time, save_csv)
-    stop = datetime.now()
-    print(f"api_import_campaign_subscriptions_data Territory ID: {territory_id}, Time:{(stop - start).total_seconds()} seconds")
-    return info_map
-
-
-@app.route('/api/import/nearest-edges', methods=['GET'])
-def api_import_nearest_edges_by_trace():
-    start = datetime.now()
-    territory_id = request.args.get('territory_id', type=str)
-    start_time = request.args.get('start_time', type=str)
-    end_time = request.args.get('end_time', default=None, type=str)
-    track_modes = request.args.getlist('mode', type=str)
-    save_csv = request.args.get('save_csv', default=False, type=bool)
-    info_map = import_nearest_edges_by_trace(territory_id, start_time, track_modes, end_time, save_csv)
-    stop = datetime.now()
-    print(f"api_import_nearest_edges_by_trace Territory ID: {territory_id}, Time:{(stop - start).total_seconds()} seconds")
-    return info_map
-
-
-@app.route('/api/import/info', methods=['GET'])
-def api_info_df():
-    start = datetime.now()
-    territory_id = request.args.get('territory_id', type=str)
-    year = request.args.get('year', type=str)
-    info_map = get_df_info_list(territory_id, year)
-    stop = datetime.now()
-    print(f"api_info_df Territory ID: {territory_id}, Time:{(stop - start).total_seconds()} seconds")
-    return info_map
-
-
-@app.route('/api/import/merge-edges', methods=['GET'])
-def api_map_nodes():
-    start = datetime.now()
-    territory_id = request.args.get('territory_id', type=str)
-    year = request.args.get('year', type=str)
-    save_csv = request.args.get('save_csv', default=False, type=bool)
-    info_map = merge_edges(territory_id, year, save_csv)
-    stop = datetime.now()
-    print(f"api_map_nodes Territory ID: {territory_id}, Time:{(stop - start).total_seconds()} seconds")
-    return info_map
-
-
-if __name__ == "__main__":    
-    app.run(host='0.0.0.0', port=server_port)
-
-    #start_time = "2025-05-01T00:00:00+00:00"
-    #end_time = "2025-05-30T23:59:59+00:00"
-
-    #import_campaign_tracks_data("L", start_time)
-    #import_campaign_subscriptions_data("L", start_time)
-    #import_nearest_edges_by_locate("TN", start_time)
-    #import_nearest_edges_by_trace("L", start_time, end_time)
+def merge_campaign_tracks(territory_id:str, year:str, campaign_id:str, save_csv=False):
+    file_storage = FileStorage()
+    try:
+        file_storage.merge_campaign_tracks(territory_id, year, campaign_id, save_csv)
+        df_info = get_df_info(file_storage, territory_id, file_storage.mapped_campaign_tracks, year)
+        return df_info
+    except FileNotFoundError:
+        print(f"File not found for campaign_subscriptions in territory {territory_id} for year {year}")

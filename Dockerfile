@@ -22,4 +22,4 @@ RUN addgroup \
     --uid "$UID" \
     $USER
 USER ${USER}
-ENTRYPOINT [ "python", "import-tracks-data.py" ]
+ENTRYPOINT [ "python", "import-data-api.py" ]

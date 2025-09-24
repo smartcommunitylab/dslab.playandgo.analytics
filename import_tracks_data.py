@@ -109,10 +109,12 @@ def extract_track_data_h3(track, df_tracks_info, df_nearest_edges):
 
 
 def import_nearest_edges_by_trace(territory_id, start_time, track_modes, end_time=None, save_csv=False):
+    print(f"import_nearest_edges_by_trace")
     playandgo_engine = PlayAndGoEngine()
     valhalla_engine = ValhallaEngine()
     file_storage = FileStorage()
     graph_map = GraphMap()
+    print(f"import_nearest_edges_by_trace init done")
 
     dim = 0
     try:
@@ -128,6 +130,7 @@ def import_nearest_edges_by_trace(territory_id, start_time, track_modes, end_tim
     #track_modes = ["walk", "bike", "bus", "train", "car"]
 
     for track_mode in track_modes:
+        print(f"Processing mode: {track_mode}")
         if track_mode != "train":
             try:
                 graph_map.load_graph_from_bbox(territory_id, track_mode)

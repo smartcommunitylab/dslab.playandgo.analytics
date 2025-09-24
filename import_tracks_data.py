@@ -1,3 +1,5 @@
+import logging
+
 import pandas as pd
 
 import h3
@@ -9,6 +11,8 @@ from playandgo.pg_engine import PlayAndGoEngine
 from valhalla.valhalla_engine import ValhallaEngine, convert_tracked_instance_to_points
 from storage.storage_engine import FileStorage
 from graph.graphmap import GraphMap
+
+logger = logging.getLogger(__name__)
 
 h3_res = 13  # H3 resolution level
 
@@ -27,7 +31,7 @@ def import_nearest_edges_by_locate(territory_id, start_time, end_time=None):
         for edge_info in valhalla_engine.find_nearest_edges_by_locate(track, track_id):
             if not edge_info in nearest_edges:
                 nearest_edges.append(edge_info)
-    print(f"Found {len(nearest_edges)} unique edges.")
+    logger.info(f"Found {len(nearest_edges)} unique edges.")
 
 
 def extract_track_data_osm(territory_id, track, df_tracks, df_tracks_info, df_way_shapes, df_nearest_edges, valhalla_engine, graph_map):
@@ -50,8 +54,8 @@ def extract_track_data_osm(territory_id, track, df_tracks, df_tracks_info, df_wa
         df_tracks.loc[df_tracks.index.max() + 1] = [track_id, trace_route.shape]
 
     if len(trace_route.trace_infos) > 0:
-        #lon_array =[]
-        #lat_array =[]
+        lon_array =[]
+        lat_array =[]
         for index, trace_info in enumerate(trace_route.trace_infos):
             try:
                 # check way shape
@@ -65,23 +69,35 @@ def extract_track_data_osm(territory_id, track, df_tracks, df_tracks_info, df_wa
                             else:
                                 df_way_shapes.loc[df_way_shapes.index.max() + 1] = [edge_info.way_id, edge_info.shape]
                     except Exception as e1:
-                        print(f"Error processing edge_info: {trace_info}, Error: {e1}")
+                        logger.warning(f"Error processing edge_info: {trace_info}, Error: {e1}")
+            except Exception as e2:
+                logger.warning(f"Error processing trace_info: {trace_info}, Error: {e2}")
 
-                node_id = None
-                # check if point is in bbox
-                if graph_map.is_point_in_bbox(trace_info.lon, trace_info.lat, bbox):
-                    node_id = graph_map.find_nearest_nodes(trace_info.lon, trace_info.lat)
+            lon_array.append(trace_info.lon)
+            lat_array.append(trace_info.lat)
+
+        # check if trace is in bbox
+        if graph_map.are_points_in_bbox(lon_array, lat_array, bbox):
+            nearest_node = graph_map.find_nearest_nodes(lon_array, lat_array, track_id)
+            for index, node_id in enumerate(nearest_node):
+                trace_info = trace_route.trace_infos[index]
                 cell = h3.latlng_to_cell(trace_info.lat, trace_info.lon, h3_res)
                 #df_nearest_edges = ['track_id', 'h3', 'timestamp', 'node_id', 'way_id', 'ordinal']
                 if df_nearest_edges.empty:
                     df_nearest_edges.loc[0] = [track_id, str(cell), trace_info.timestamp, node_id, trace_info.way_id, index]
                 else:
                     df_nearest_edges.loc[df_nearest_edges.index.max() + 1] = [track_id, str(cell), trace_info.timestamp, node_id, trace_info.way_id, index]
-            except Exception as e2:
-                print(f"Error processing trace_info: {trace_info}, Error: {e2}")
+        else:
+            for index, trace_info in enumerate(trace_route.trace_infos):
+                cell = h3.latlng_to_cell(trace_info.lat, trace_info.lon, h3_res)
+                #df_nearest_edges = ['track_id', 'h3', 'timestamp', 'node_id', 'way_id', 'ordinal']
+                if df_nearest_edges.empty:
+                    df_nearest_edges.loc[0] = [track_id, str(cell), trace_info.timestamp, None, trace_info.way_id, index]
+                else:
+                    df_nearest_edges.loc[df_nearest_edges.index.max() + 1] = [track_id, str(cell), trace_info.timestamp, None, trace_info.way_id, index]
 
     stop = datetime.now()
-    print(f"{datetime.isoformat(datetime.now())} Track ID: {track_id}, Time:{(stop - start).total_seconds()} seconds")
+    logger.info(f"Track ID: {track_id}, Time:{(stop - start).total_seconds()} seconds")
 
 
 def extract_track_data_h3(track, df_tracks_info, df_nearest_edges):
@@ -105,16 +121,15 @@ def extract_track_data_h3(track, df_tracks_info, df_nearest_edges):
             df_nearest_edges.loc[df_nearest_edges.index.max() + 1] = [track_id, str(cell), point['time'], None, None, index]
 
     stop = datetime.now()
-    print(f"{datetime.isoformat(datetime.now())} Track ID: {track_id}, Time:{(stop - start).total_seconds()} seconds")
+    logger.info(f"Track ID: {track_id}, Time:{(stop - start).total_seconds()} seconds")
 
 
 def import_nearest_edges_by_trace(territory_id, start_time, track_modes, end_time=None, save_csv=False):
-    print(f"import_nearest_edges_by_trace")
+    logger.info(f"import_nearest_edges_by_trace")
     playandgo_engine = PlayAndGoEngine()
     valhalla_engine = ValhallaEngine()
     file_storage = FileStorage()
     graph_map = GraphMap()
-    print(f"import_nearest_edges_by_trace init done")
 
     dim = 0
     try:
@@ -130,28 +145,28 @@ def import_nearest_edges_by_trace(territory_id, start_time, track_modes, end_tim
     #track_modes = ["walk", "bike", "bus", "train", "car"]
 
     for track_mode in track_modes:
-        print(f"Processing mode: {track_mode}")
+        logger.info(f"Processing mode: {track_mode}")
         if track_mode != "train":
             try:
                 graph_map.load_graph_from_bbox(territory_id, track_mode)
             except ValueError as e:
-                print(f"Error loading graph for territory {territory_id} with mode {track_mode}: {e}")
+                logger.info(f"Error loading graph for territory {territory_id} with mode {track_mode}: {e}")
                 continue
 
             count = 0
             for track in playandgo_engine.get_tracks(territory_id, start_time, end_time, track_mode):
                 try:
                     extract_track_data_osm(territory_id, track, df_tracks, df_tracks_info, df_way_shapes, df_nearest_edges, valhalla_engine, graph_map)
-                    print(f"Track {track_mode} {count} processed.")
+                    logger.info(f"Track {track_mode} {count} processed.")
                 except Exception as e:
-                    print(f"Error processing track {track_mode} {count}: {e}")
+                    logger.warning(f"Error processing track {track_mode} {count}: {e}")
                 count += 1
 
         else:
             count = 0
             for track in playandgo_engine.get_tracks(territory_id, start_time, end_time, track_mode):
                 extract_track_data_h3(track, df_tracks_info, df_nearest_edges)
-                print(f"Track {track_mode} {count} processed.")
+                logger.info(f"Track {track_mode} {count} processed.")
                 count += 1
 
 
@@ -161,31 +176,31 @@ def import_nearest_edges_by_trace(territory_id, start_time, track_modes, end_tim
     infos = []
 
     rows, columns = df_tracks.shape
-    print(f"Imported Tracks Rows: {rows}, Columns: {columns}")
+    logger.info(f"Imported Tracks Rows: {rows}, Columns: {columns}")
     file_storage.merge_tracks(territory_id, year, df_tracks, save_csv)
     info_map = {"name": file_storage.tracks, "rows": rows}
     infos.append(info_map)
 
     rows, columns = df_tracks_info.shape
-    print(f"Imported Tracks Info Rows: {rows}, Columns: {columns}")
+    logger.info(f"Imported Tracks Info Rows: {rows}, Columns: {columns}")
     file_storage.merge_tracks_info(territory_id, year, df_tracks_info, save_csv)
     info_map = {"name": file_storage.tracks_info, "rows": rows}
     infos.append(info_map)
 
     rows, columns = df_way_shapes.shape
-    print(f"Imported Way Shapes Rows: {rows}, Columns: {columns}")
+    logger.info(f"Imported Way Shapes Rows: {rows}, Columns: {columns}")
     file_storage.merge_way_shapes(territory_id, df_way_shapes, save_csv)
     info_map = {"name": file_storage.way_shapes, "rows": (rows - dim)}
     infos.append(info_map)
 
     rows, columns = df_nearest_edges.shape
-    print(f"Imported Nearest Edges Rows: {rows}, Columns: {columns}")
+    logger.info(f"Imported Nearest Edges Rows: {rows}, Columns: {columns}")
     file_storage.merge_nearest_edges(territory_id, year, df_nearest_edges, save_csv)
     info_map = {"name": file_storage.nearest_edges, "rows": rows}
     infos.append(info_map)
 
     #rows, columns = df_h3_info.shape
-    #print(f"Imported H3 Rows: {rows}, Columns: {columns}")
+    #logger.info(f"Imported H3 Rows: {rows}, Columns: {columns}")
     #file_storage.merge_h3_info(territory_id, year, df_h3_info, save_csv)
     #info_map = {"name": file_storage.h3_info, "rows": rows}
     #infos.append(info_map)
@@ -194,7 +209,7 @@ def import_nearest_edges_by_trace(territory_id, start_time, track_modes, end_tim
 
 
 def import_campaign_tracks_data(territory_id, start_time, end_time=None, save_csv=False):
-    print(f"import_campaign_tracks_data")
+    logger.info(f"import_campaign_tracks_data")
     # Inizializza gli engine
     playandgo_engine = PlayAndGoEngine()
     file_storage = FileStorage()
@@ -210,16 +225,16 @@ def import_campaign_tracks_data(territory_id, start_time, end_time=None, save_cs
                 df.loc[0] = vars(c_track)
             else:
                 df.loc[df.index.max() + 1] = vars(c_track)
-            print(f"Processed campaign track: {c_track.track_id}")
+            logger.info(f"Processed campaign track: {c_track.track_id}")
         except Exception as e:
-            print(f"Error processing campaign track: {c_track.track_id}, Error: {e}")
+            logger.warning(f"Error processing campaign track: {c_track.track_id}, Error: {e}")
             continue
 
     start_time_dt = datetime.fromisoformat(start_time)
     year = start_time_dt.strftime("%Y")
 
     rows, columns = df.shape
-    print(f"Imported Campaign Tracks Rows: {rows}, Columns: {columns}")
+    logger.info(f"Imported Campaign Tracks Rows: {rows}, Columns: {columns}")
     file_storage.merge_campaign_tracks(territory_id, year, df, save_csv)
     info_map = {"name": file_storage.campaign_tracks, "rows": rows}
     return info_map
@@ -240,16 +255,16 @@ def import_campaign_subscriptions_data(territory_id, start_time, end_time=None, 
                 df.loc[0] = vars(c_subscription)
             else:
                 df.loc[df.index.max() + 1] = vars(c_subscription)
-            print(f"Processed campaign subscription: {c_subscription.player_id}, {c_subscription.campaign_id}")
+            logger.info(f"Processed campaign subscription: {c_subscription.player_id}, {c_subscription.campaign_id}")
         except Exception as e:
-            print(f"Error processing campaign subscription: {c_subscription.campaign_id}, Error: {e}")
+            logger.warning(f"Error processing campaign subscription: {c_subscription.campaign_id}, Error: {e}")
             continue
         
     start_time_dt = datetime.fromisoformat(start_time)
     year = start_time_dt.strftime("%Y")
 
     rows, columns = df.shape
-    print(f"Imported Campaign Sybscriptions Rows: {rows}, Columns: {columns}")
+    logger.info(f"Imported Campaign Sybscriptions Rows: {rows}, Columns: {columns}")
     file_storage.merge_campaign_subscriptions(territory_id, year, df, save_csv)
     info_map = {"name": file_storage.campaign_subscriptions, "rows": rows}
     return info_map
@@ -276,43 +291,43 @@ def get_df_info_list(territory_id:str, year:str):
         df_info = get_df_info(file_storage, territory_id, file_storage.campaign_subscriptions, year)
         info_list.append(df_info)
     except FileNotFoundError:
-        print(f"File not found for campaign_subscriptions in territory {territory_id} for year {year}")
+        logger.error(f"File not found for campaign_subscriptions in territory {territory_id} for year {year}")
 
     try:
         df_info = get_df_info(file_storage, territory_id, file_storage.campaign_tracks, year)
         info_list.append(df_info)
     except FileNotFoundError:
-        print(f"File not found for campaign_tracks in territory {territory_id} for year {year}")
+        logger.error(f"File not found for campaign_tracks in territory {territory_id} for year {year}")
 
     try:
         df_info = get_df_info(file_storage, territory_id, file_storage.tracks, year)
         info_list.append(df_info)
     except FileNotFoundError:
-        print(f"File not found for tracks in territory {territory_id} for year {year}")
+        logger.error(f"File not found for tracks in territory {territory_id} for year {year}")
 
     try:
         df_info = get_df_info(file_storage, territory_id, file_storage.tracks_info, year)
         info_list.append(df_info)
     except FileNotFoundError:
-        print(f"File not found for tracks_info in territory {territory_id} for year {year}")
+        logger.error(f"File not found for tracks_info in territory {territory_id} for year {year}")
 
     try:
         df_info = get_df_info(file_storage, territory_id, file_storage.nearest_edges, year)
         info_list.append(df_info)
     except FileNotFoundError:
-        print(f"File not found for nearest_edges in territory {territory_id} for year {year}")
+        logger.error(f"File not found for nearest_edges in territory {territory_id} for year {year}")
 
     try:
         df_info = get_df_info(file_storage, territory_id, file_storage.h3_info, year)
         info_list.append(df_info)
     except FileNotFoundError:
-        print(f"File not found for h3_info in territory {territory_id} for year {year}")
+        logger.error(f"File not found for h3_info in territory {territory_id} for year {year}")
 
     try:
         df_info = get_df_info(file_storage, territory_id, file_storage.way_shapes)
         info_list.append(df_info)
     except FileNotFoundError:
-        print(f"File not found for way_shapes in territory {territory_id}")
+        logger.error(f"File not found for way_shapes in territory {territory_id}")
 
     return info_list
 
@@ -324,7 +339,7 @@ def merge_edges(territory_id:str, year:str, save_csv=False):
         df_info = get_df_info(file_storage, territory_id, file_storage.mapped_edges, year)
         return df_info
     except FileNotFoundError:
-        print(f"File not found for campaign_subscriptions in territory {territory_id} for year {year}")
+        logger.error(f"File not found for campaign_subscriptions in territory {territory_id} for year {year}")
 
 
 def merge_campaign_tracks(territory_id:str, year:str, campaign_id:str, save_csv=False):
@@ -334,4 +349,4 @@ def merge_campaign_tracks(territory_id:str, year:str, campaign_id:str, save_csv=
         df_info = get_df_info(file_storage, territory_id, file_storage.mapped_campaign_tracks, year)
         return df_info
     except FileNotFoundError:
-        print(f"File not found for campaign_subscriptions in territory {territory_id} for year {year}")
+        logger.error(f"File not found for campaign_subscriptions in territory {territory_id} for year {year}")

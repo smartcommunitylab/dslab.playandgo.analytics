@@ -3,9 +3,11 @@ import osmnx as ox
 
 import json
 import os
+import logging
 
 from datetime import datetime
 
+logger = logging.getLogger(__name__)
 
 class GraphMap:
     def __init__(self):
@@ -75,25 +77,25 @@ class GraphMap:
         osm_file = self.get_osm_file(territory_id)
         if not osm_file:
             raise ValueError(f"No OSM file found for territory ID: {territory_id}")
-        print(f"{datetime.isoformat(datetime.now())} Start loading Graph - Territory ID: {territory_id}, Mode: {mode_type}")
+        logger.info(f"Start loading Graph - Territory ID: {territory_id}, Mode: {mode_type}")
         start = datetime.now()
         osm = pyrosm.OSM(osm_file)
         nodes, edges = osm.get_network(nodes=True, network_type=network_type)
         self.G = osm.to_graph(nodes, edges, graph_type="networkx")
         stop = datetime.now()
-        print(f"{datetime.isoformat(datetime.now())} Graph loaded - Territory ID: {territory_id}, Mode: {mode_type}, Time:{(stop - start).total_seconds()} seconds")
+        logger.info(f"Graph loaded - Territory ID: {territory_id}, Mode: {mode_type}, Time:{(stop - start).total_seconds()} seconds")
 
 
     def load_graph_from_bbox(self, territory_id: str, mode_type: str):
         network_type = self.get_osmnx_network_type(mode_type)
         #ox.settings.bidirectional_network_types += network_type
-        print(f"{datetime.isoformat(datetime.now())} Start loading Graph BBOX - Territory ID: {territory_id}, Mode: {mode_type}")
+        logger.info(f"Start loading Graph BBOX - Territory ID: {territory_id}, Mode: {mode_type}")
         start = datetime.now()
         bbox = self.get_bbox(territory_id)
         ox.settings.use_cache = False
         self.G = ox.graph.graph_from_bbox(bbox, network_type=network_type)
         stop = datetime.now()
-        print(f"{datetime.isoformat(datetime.now())} Graph loaded from BBOX - Territory ID: {territory_id}, Mode: {mode_type}, Time:{(stop - start).total_seconds()} seconds")
+        logger.info(f"Graph loaded from BBOX - Territory ID: {territory_id}, Mode: {mode_type}, Time:{(stop - start).total_seconds()} seconds")
 
 
     def find_nearest_nodes(self, lon_array, lat_array, track_id):
@@ -103,11 +105,11 @@ class GraphMap:
         start = datetime.now()
         nearest_nodes = ox.distance.nearest_nodes(self.G, lon_array, lat_array, return_dist=False)
         stop = datetime.now()
-        print(f"{datetime.isoformat(datetime.now())} Track ID: {track_id}, Nodes: {len(nearest_nodes)}, Time:{(stop - start).total_seconds()} seconds")
+        logger.info(f"Track ID: {track_id}, Nodes: {len(nearest_nodes)}, Time:{(stop - start).total_seconds()} seconds")
         return nearest_nodes
     
 
-    def find_nearest_nodes(self, lon, lat):
+    def find_nearest_node(self, lon, lat):
         return ox.distance.nearest_nodes(self.G, lon, lat, return_dist=False)
 
 
@@ -115,3 +117,13 @@ class GraphMap:
         min_lon, min_lat, max_lon, max_lat = bbox
         return (min_lat <= lat <= max_lat) and (min_lon <= lon <= max_lon)
 
+
+    def are_points_in_bbox(self, lons: list[float], lats: list[float], bbox: list[float]) -> bool:
+        """
+        Verifica se tutti i punti (lons, lats) sono contenuti nel bbox.
+        bbox: [min_lon, min_lat, max_lon, max_lat]
+        """
+        min_lon, min_lat, max_lon, max_lat = bbox
+        lons = list(lons)
+        lats = list(lats)
+        return all((min_lat <= lat <= max_lat) and (min_lon <= lon <= max_lon) for lon, lat in zip(lons, lats))

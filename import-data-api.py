@@ -1,4 +1,5 @@
 import os
+import logging
 
 from flask import Flask, request, Response
 
@@ -10,6 +11,7 @@ from import_tracks_data import get_df_info_list, merge_edges, merge_campaign_tra
 app = Flask(__name__)
 server_port = os.getenv("SERVER_PORT", 8078)
 
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s - %(name)s: %(message)s')
 
 @app.route('/api/import/campaign-tracks', methods=['GET'])
 def api_import_campaign_tracks_data():

@@ -1,5 +1,8 @@
 import os
 import pandas as pd
+import logging
+
+logger = logging.getLogger(__name__)
 
 class FileStorage:
     def __init__(self):
@@ -22,7 +25,7 @@ class FileStorage:
         directory_path = self.store_path + "/" + territory_id
         if not os.path.exists(directory_path):
             os.makedirs(directory_path)
-            print(f"Created directory: {directory_path}")
+            logger.info(f"Created directory: {directory_path}")
 
 
     def get_filename(self, territory_id:str, df_file:str, year:str=None) -> str: 
@@ -46,7 +49,7 @@ class FileStorage:
         else:   
             df.to_parquet(file_path, engine="pyarrow")                   
             rows, columns = df.shape
-            print(f"Storage Rows: {rows}, Columns: {columns}")
+            logger.info(f"Storage Rows: {rows}, Columns: {columns}")
             if save_csv:
                 self.save_csv(file_path, df)
 
@@ -64,7 +67,7 @@ class FileStorage:
         else:   
             df.to_parquet(file_path, engine="pyarrow")                   
             rows, columns = df.shape
-            print(f"Storage Rows: {rows}, Columns: {columns}")
+            logger.info(f"Storage Rows: {rows}, Columns: {columns}")
             if save_csv:
                 self.save_csv(file_path, df)
 
@@ -82,7 +85,7 @@ class FileStorage:
         else:   
             df.to_parquet(file_path, engine="pyarrow")                   
             rows, columns = df.shape
-            print(f"Storage Rows: {rows}, Columns: {columns}")
+            logger.info(f"Storage Rows: {rows}, Columns: {columns}")
             if save_csv:
                 self.save_csv(file_path, df)
 
@@ -100,7 +103,7 @@ class FileStorage:
         else:   
             df.to_parquet(file_path, engine="pyarrow")                   
             rows, columns = df.shape
-            print(f"Storage Rows: {rows}, Columns: {columns}")
+            logger.info(f"Storage Rows: {rows}, Columns: {columns}")
             if save_csv:
                 self.save_csv(file_path, df)
 
@@ -118,7 +121,7 @@ class FileStorage:
         else:   
             df.to_parquet(file_path, engine="pyarrow")                   
             rows, columns = df.shape
-            print(f"Storage Rows: {rows}, Columns: {columns}")
+            logger.info(f"Storage Rows: {rows}, Columns: {columns}")
             if save_csv:
                 self.save_csv(file_path, df)
 
@@ -136,7 +139,7 @@ class FileStorage:
         else:   
             df.to_parquet(file_path, engine="pyarrow")                   
             rows, columns = df.shape
-            print(f"Storage Rows: {rows}, Columns: {columns}")
+            logger.info(f"Storage Rows: {rows}, Columns: {columns}")
             if save_csv:
                 self.save_csv(file_path, df)
 
@@ -154,7 +157,7 @@ class FileStorage:
         else:   
             df.to_parquet(file_path, engine="pyarrow")                   
             rows, columns = df.shape
-            print(f"Storage Rows: {rows}, Columns: {columns}")
+            logger.info(f"Storage Rows: {rows}, Columns: {columns}")
             if save_csv:
                 self.save_csv(file_path, df)
 
@@ -180,21 +183,21 @@ class FileStorage:
         self.check_directory(territory_id)
         try:
             s, df_campaign_tracks = self.load_dataframe(territory_id, self.campaign_tracks, year)
-            print(f"Campaign Tracks Rows: {df_campaign_tracks.shape[0]}")
+            logger.info(f"Campaign Tracks Rows: {df_campaign_tracks.shape[0]}")
             s, df_campaign_subscriptions = self.load_dataframe(territory_id, self.campaign_subscriptions, year)
-            print(f"Campaign Subscriptions Rows: {df_campaign_subscriptions.shape[0]}")
+            logger.info(f"Campaign Subscriptions Rows: {df_campaign_subscriptions.shape[0]}")
 
             # Filtra per campaign_id
             df_campaign_tracks = df_campaign_tracks[df_campaign_tracks['campaign_id'] == campaign_id]
-            print(f"Filtered Campaign Tracks Rows: {df_campaign_tracks.shape[0]}")
+            logger.info(f"Filtered Campaign Tracks Rows: {df_campaign_tracks.shape[0]}")
             df_campaign_subscriptions = df_campaign_subscriptions[df_campaign_subscriptions['campaign_id'] == campaign_id]
-            print(f"Filtered Campaign Subscriptions Rows: {df_campaign_subscriptions.shape[0]}")
+            logger.info(f"Filtered Campaign Subscriptions Rows: {df_campaign_subscriptions.shape[0]}")
 
             # Trova i player_id presenti in df_campaign_subscriptions
             #player_ids_subs = df_campaign_subscriptions['player_id'].unique()
             # Seleziona le righe di df_campaign_tracks con player_id non presente in df_campaign_subscriptions
             #tracks_not_in_subs = df_campaign_tracks[~df_campaign_tracks['player_id'].isin(player_ids_subs)]
-            #print(tracks_not_in_subs)
+            #logger.info(tracks_not_in_subs)
 
             # Seleziona solo le colonne chiave + group_id dal secondo dataframe
             df_campaign_subscriptions = df_campaign_subscriptions[['territory_id', 'player_id', 'campaign_id', 'group_id']]
@@ -221,7 +224,7 @@ class FileStorage:
             .drop_duplicates(subset=columns_sub, keep='last') \
             .reset_index(drop=True)
         rows, columns = combined_df.shape
-        print(f"Storage Rows: {rows}, Columns: {columns}")
+        logger.info(f"Storage Rows: {rows}, Columns: {columns}")
         return combined_df
     
 

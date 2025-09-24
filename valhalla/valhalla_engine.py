@@ -1,10 +1,13 @@
 import os
 import json
+import logging
 from datetime import datetime
 from datetime import timezone
 import requests
 from jinja2 import Template
 import traceback
+
+logger = logging.getLogger(__name__)
 
 class EndgeInfo:    
     """
@@ -150,13 +153,13 @@ class ValhallaEngine:
                                 if edge_info["way_id"] == way_id:
                                     endge_info_obj = EndgeInfo(edge_info["way_id"], edge_info["shape"])
                                     #stop = datetime.now()
-                                    #print(f"{datetime.isoformat(datetime.now())} Way ID: {way_id}, Time:{(stop - start).total_seconds()} seconds")
+                                    #logger.info(f"Way ID: {way_id}, Time:{(stop - start).total_seconds()} seconds")
                                     return endge_info_obj
             else:
-                print(f"Errore: {response.status_code} - {response.text}")
+                logger.error(f"Errore: {response.status_code} - {response.text}")
             return None
         except Exception as e:
-            print(f"Exception[{way_id}]: {e}")
+            logger.error(f"Exception[{way_id}]: {e}")
             
         return None
     
@@ -169,7 +172,7 @@ class ValhallaEngine:
         try:
             start = datetime.now()
             points = convert_tracked_instance_to_points(track)
-            print(f"{datetime.isoformat(datetime.now())} Track ID: {track_id}, Points: {len(points)}")
+            logger.info(f"Track ID: {track_id}, Points: {len(points)}")
             if len(points) > 0:
                 # Sostituisci i valori
                 rendered = self.template_locate.render(costing=get_transit_mode(track), points=points)
@@ -189,12 +192,12 @@ class ValhallaEngine:
                                     if not endge_info_obj in nearest_edges:
                                         nearest_edges.append(endge_info_obj)
                 else:
-                    print(f"Errore[{track_id}]: {response.status_code} - {response.text}")
+                    logger.error(f"Errore[{track_id}]: {response.status_code} - {response.text}")
             stop = datetime.now()
-            print(f"{datetime.isoformat(datetime.now())} Track ID: {track_id}, Edges: {len(nearest_edges)}, Time:{(stop - start).total_seconds()} seconds")
+            logger.info(f"Track ID: {track_id}, Edges: {len(nearest_edges)}, Time:{(stop - start).total_seconds()} seconds")
             return nearest_edges
         except Exception as e:
-            print(f"Exception[{track_id}]: {e}")
+            logger.error(f"Exception[{track_id}]: {e}")
         
         return []
 
@@ -207,7 +210,7 @@ class ValhallaEngine:
             #start = datetime.now()
             points = convert_tracked_instance_to_points(track)
             sorted_points = sorted(points, key=lambda x: x["time"])
-            print(f"{datetime.isoformat(datetime.now())} Track ID: {track_id}, Points: {len(points)}")
+            logger.info(f"Track ID: {track_id}, Points: {len(points)}")
             if len(points) > 0:
                 # Sostituisci i valori
                 rendered = self.template_trace_attribuutes.render(costing=get_transit_mode(track), points=sorted_points)
@@ -240,12 +243,12 @@ class ValhallaEngine:
                             trace_infos.append(trace_info)
                     trace_route.trace_infos = trace_infos
                 else:
-                    print(f"Errore[{track_id}]: {response.status_code} - {response.text}")
+                    logger.error(f"Errore[{track_id}]: {response.status_code} - {response.text}")
             #stop = datetime.now()
-            #print(f"{datetime.isoformat(datetime.now())} Track ID: {track_id}, Edges: {len(trace_route.trace_infos)}, Time:{(stop - start).total_seconds()} seconds")
+            #logger.info(f"Track ID: {track_id}, Edges: {len(trace_route.trace_infos)}, Time:{(stop - start).total_seconds()} seconds")
             return trace_route
         except Exception as e:
             traceback.print_exc()
-            print(f"Exception[{track_id}]: {e}")
+            logger.error(f"Exception[{track_id}]: {e}")
             
         return TraceRoute(track_id=track_id)

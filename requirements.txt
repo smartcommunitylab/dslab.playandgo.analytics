@@ -7,7 +7,7 @@ flask==3.1.1
 pyrosm==0.6.2
 osmnx==2.0.4
 h3==4.3.0
-#scikit-learn==1.7.0
+scikit-learn==1.7.0
 #psycopg2==2.9.10
 #SQLAlchemy==2.0.41
 #geojson==3.2.0

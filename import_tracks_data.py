@@ -34,24 +34,23 @@ def import_nearest_edges_by_locate(territory_id, start_time, end_time=None):
     logger.info(f"Found {len(nearest_edges)} unique edges.")
 
 
-def extract_track_data_osm(territory_id, track, df_tracks, df_tracks_info, df_way_shapes, df_nearest_edges, valhalla_engine, graph_map):
+def extract_track_data_osm(territory_id, track, ls_tracks, ls_tracks_info, df_way_shapes, ls_nearest_edges, valhalla_engine, graph_map):
     start = datetime.now()
 
     bbox = graph_map.get_bbox(territory_id)
 
     track_id = str(track["_id"])
 
-    if df_tracks_info.empty:
-        df_tracks_info.loc[0] = [track['userId'], track_id, track['multimodalId'], track['freeTrackingTransport'], get_utc_datetime(track['startTime'])]
-    else:
-        df_tracks_info.loc[df_tracks_info.index.max() + 1] = [track['userId'], track_id, track['multimodalId'], track['freeTrackingTransport'], get_utc_datetime(track['startTime'])]
+    # columns=['player_id', 'track_id', 'multimodal_id', 'mode', 'start_time']
+    track_info = {'player_id': track['userId'], 'track_id': track_id, 'multimodal_id': track['multimodalId'], 
+                  'mode': track['freeTrackingTransport'], 'start_time': get_utc_datetime(track['startTime'])}
+    ls_tracks_info.append(track_info)
 
     trace_route = valhalla_engine.find_nearest_edges_by_trace(track, track_id) 
 
-    if df_tracks.empty:
-        df_tracks.loc[0] = [track_id, trace_route.shape]
-    else:
-        df_tracks.loc[df_tracks.index.max() + 1] = [track_id, trace_route.shape]
+    # columns=['track_id', 'shape']
+    track_shape = {'track_id': track_id, 'shape': trace_route.shape}
+    ls_tracks.append(track_shape)
 
     if len(trace_route.trace_infos) > 0:
         lon_array =[]
@@ -83,42 +82,39 @@ def extract_track_data_osm(territory_id, track, df_tracks, df_tracks_info, df_wa
                 trace_info = trace_route.trace_infos[index]
                 cell = h3.latlng_to_cell(trace_info.lat, trace_info.lon, h3_res)
                 #df_nearest_edges = ['track_id', 'h3', 'timestamp', 'node_id', 'way_id', 'ordinal']
-                if df_nearest_edges.empty:
-                    df_nearest_edges.loc[0] = [track_id, str(cell), trace_info.timestamp, node_id, trace_info.way_id, index]
-                else:
-                    df_nearest_edges.loc[df_nearest_edges.index.max() + 1] = [track_id, str(cell), trace_info.timestamp, node_id, trace_info.way_id, index]
+                nearest_edge = {'track_id': track_id, 'h3': str(cell), 'timestamp': trace_info.timestamp, 
+                                'node_id': node_id, 'way_id': trace_info.way_id, 'ordinal': index}
+                ls_nearest_edges.append(nearest_edge)
         else:
             for index, trace_info in enumerate(trace_route.trace_infos):
                 cell = h3.latlng_to_cell(trace_info.lat, trace_info.lon, h3_res)
                 #df_nearest_edges = ['track_id', 'h3', 'timestamp', 'node_id', 'way_id', 'ordinal']
-                if df_nearest_edges.empty:
-                    df_nearest_edges.loc[0] = [track_id, str(cell), trace_info.timestamp, None, trace_info.way_id, index]
-                else:
-                    df_nearest_edges.loc[df_nearest_edges.index.max() + 1] = [track_id, str(cell), trace_info.timestamp, None, trace_info.way_id, index]
+                nearest_edge = {'track_id': track_id, 'h3': str(cell), 'timestamp': trace_info.timestamp, 
+                                'node_id': None, 'way_id': trace_info.way_id, 'ordinal': index}
+                ls_nearest_edges.append(nearest_edge)
 
     stop = datetime.now()
     logger.info(f"Track ID: {track_id}, Time:{(stop - start).total_seconds()} seconds")
 
 
-def extract_track_data_h3(track, df_tracks_info, df_nearest_edges):
+def extract_track_data_h3(track, ls_tracks_info, ls_nearest_edges):
     start = datetime.now()
 
     track_id = str(track["_id"])
 
-    if df_tracks_info.empty:
-        df_tracks_info.loc[0] = [track['userId'], track_id, track['multimodalId'], track['freeTrackingTransport'], get_utc_datetime(track['startTime'])]
-    else:
-        df_tracks_info.loc[df_tracks_info.index.max() + 1] = [track['userId'], track_id, track['multimodalId'], track['freeTrackingTransport'], get_utc_datetime(track['startTime'])]
+    # columns=['player_id', 'track_id', 'multimodal_id', 'mode', 'start_time']
+    track_info = {'player_id': track['userId'], 'track_id': track_id, 'multimodal_id': track['multimodalId'], 
+                  'mode': track['freeTrackingTransport'], 'start_time': get_utc_datetime(track['startTime'])}
+    ls_tracks_info.append(track_info)
 
     points = convert_tracked_instance_to_points(track)    
     sorted_points = sorted(points, key=lambda x: x["time"])
     for index, point in enumerate(sorted_points):
         cell = h3.latlng_to_cell(point['latitude'], point['longitude'], h3_res)
         #df_nearest_edges = ['track_id', 'h3', 'timestamp', 'node_id', 'way_id', 'ordinal']
-        if df_nearest_edges.empty:
-            df_nearest_edges.loc[0] = [track_id, str(cell), point['time'], None, None, index]
-        else:
-            df_nearest_edges.loc[df_nearest_edges.index.max() + 1] = [track_id, str(cell), point['time'], None, None, index]
+        nearest_edge = {'track_id': track_id, 'h3': str(cell), 'timestamp': point['time'], 
+                        'node_id': None, 'way_id': None, 'ordinal': index}
+        ls_nearest_edges.append(nearest_edge)
 
     stop = datetime.now()
     logger.info(f"Track ID: {track_id}, Time:{(stop - start).total_seconds()} seconds")
@@ -137,10 +133,15 @@ def import_nearest_edges_by_trace(territory_id, start_time, track_modes, end_tim
         dim =  df_way_shapes.shape[0]
     except FileNotFoundError:
         df_way_shapes = pd.DataFrame(columns=['way_id', 'shape'])
-    df_tracks = pd.DataFrame(columns=['track_id', 'shape'])
-    df_tracks_info = pd.DataFrame(columns=['player_id', 'track_id', 'multimodal_id', 'mode', 'start_time'])
-    df_nearest_edges = pd.DataFrame(columns=['track_id', 'h3', 'timestamp', 'node_id', 'way_id', 'ordinal'])
-    #df_h3_info = pd.DataFrame(columns=['track_id', 'h3', 'timestamp', 'ordinal'])
+    
+    # columns=['track_id', 'shape']
+    ls_tracks = [] 
+    
+    # columns=['player_id', 'track_id', 'multimodal_id', 'mode', 'start_time']
+    ls_tracks_info = []
+
+    # columns=['track_id', 'h3', 'timestamp', 'node_id', 'way_id', 'ordinal']
+    ls_nearest_edges = []
 
     #track_modes = ["walk", "bike", "bus", "train", "car"]
 
@@ -156,7 +157,7 @@ def import_nearest_edges_by_trace(territory_id, start_time, track_modes, end_tim
             count = 0
             for track in playandgo_engine.get_tracks(territory_id, start_time, end_time, track_mode):
                 try:
-                    extract_track_data_osm(territory_id, track, df_tracks, df_tracks_info, df_way_shapes, df_nearest_edges, valhalla_engine, graph_map)
+                    extract_track_data_osm(territory_id, track, ls_tracks, ls_tracks_info, df_way_shapes, ls_nearest_edges, valhalla_engine, graph_map)
                     logger.info(f"Track {track_mode} {count} processed.")
                 except Exception as e:
                     logger.warning(f"Error processing track {track_mode} {count}: {e}")
@@ -165,7 +166,7 @@ def import_nearest_edges_by_trace(territory_id, start_time, track_modes, end_tim
         else:
             count = 0
             for track in playandgo_engine.get_tracks(territory_id, start_time, end_time, track_mode):
-                extract_track_data_h3(track, df_tracks_info, df_nearest_edges)
+                extract_track_data_h3(track, ls_tracks_info, ls_nearest_edges)
                 logger.info(f"Track {track_mode} {count} processed.")
                 count += 1
 
@@ -175,12 +176,14 @@ def import_nearest_edges_by_trace(territory_id, start_time, track_modes, end_tim
 
     infos = []
 
+    df_tracks = pd.DataFrame(ls_tracks, columns=['track_id', 'shape'])
     rows, columns = df_tracks.shape
     logger.info(f"Imported Tracks Rows: {rows}, Columns: {columns}")
     file_storage.merge_tracks(territory_id, year, df_tracks, save_csv)
     info_map = {"name": file_storage.tracks, "rows": rows}
     infos.append(info_map)
 
+    df_tracks_info = pd.DataFrame(ls_tracks_info, columns=['player_id', 'track_id', 'multimodal_id', 'mode', 'start_time'])
     rows, columns = df_tracks_info.shape
     logger.info(f"Imported Tracks Info Rows: {rows}, Columns: {columns}")
     file_storage.merge_tracks_info(territory_id, year, df_tracks_info, save_csv)
@@ -193,6 +196,7 @@ def import_nearest_edges_by_trace(territory_id, start_time, track_modes, end_tim
     info_map = {"name": file_storage.way_shapes, "rows": (rows - dim)}
     infos.append(info_map)
 
+    df_nearest_edges = pd.DataFrame(ls_nearest_edges, columns=['track_id', 'h3', 'timestamp', 'node_id', 'way_id', 'ordinal'])
     rows, columns = df_nearest_edges.shape
     logger.info(f"Imported Nearest Edges Rows: {rows}, Columns: {columns}")
     file_storage.merge_nearest_edges(territory_id, year, df_nearest_edges, save_csv)

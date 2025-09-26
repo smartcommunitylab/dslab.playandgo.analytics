@@ -105,12 +105,13 @@ class PlayAndGoEngine:
             query["freeTrackingTransport"] = mode
         
         # Ottieni un cursore per tutti i documenti della collection
-        cursor = collection.find(query)
+        cursor = collection.find(query, batch_size=10)
         # Itera sui documenti
         for track in cursor:
             #get only valid docuemt
             if "validationResult" in track and "valid" in track["validationResult"] and track["validationResult"]["valid"] is True:
                 yield track
+        cursor.close()
         client.close()
 
 

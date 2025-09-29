@@ -178,7 +178,7 @@ class FileStorage:
             raise FileNotFoundError(f"Required files for merging mapped edges not found for territory {territory_id} and year {year}.")
 
 
-    def merge_campaign_tracks(self, territory_id:str, year:str, campaign_id:str, save_csv:bool=False):
+    def merge_campaign_tracks_by_campaign(self, territory_id:str, year:str, campaign_id:str, save_csv:bool=False):
         """Merge data to a file."""
         self.check_directory(territory_id)
         try:

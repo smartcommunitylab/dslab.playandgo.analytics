@@ -219,16 +219,14 @@ def import_campaign_tracks_data(territory_id, start_time, end_time=None, save_cs
     file_storage = FileStorage()
 
     # Ottieni i dati da PlayAndGo
-    df = pd.DataFrame(columns=['territory_id', 'player_id', 'track_id', 'campaign_id', 'campaign_type', 
-                               'start_time', 'end_time', 'mode', 'validation_result', 'distance', 'duration'])
+    # columns=['territory_id', 'player_id', 'track_id', 'campaign_id', 'campaign_type', 
+    #                           'start_time', 'end_time', 'mode', 'validation_result', 'distance', 'duration']
+    ls_tracks = []
     for c_track in playandgo_engine.get_campaign_tracks(territory_id, start_time, end_time):
         try:
             c_track.start_time = get_utc_datetime(c_track.start_time)
             c_track.end_time = get_utc_datetime(c_track.end_time)
-            if df.empty:
-                df.loc[0] = vars(c_track)
-            else:
-                df.loc[df.index.max() + 1] = vars(c_track)
+            ls_tracks.append(c_track.__dict__)
             logger.info(f"Processed campaign track: {c_track.track_id}")
         except Exception as e:
             logger.warning(f"Error processing campaign track: {c_track.track_id}, Error: {e}")
@@ -237,6 +235,8 @@ def import_campaign_tracks_data(territory_id, start_time, end_time=None, save_cs
     start_time_dt = datetime.fromisoformat(start_time)
     year = start_time_dt.strftime("%Y")
 
+    df = pd.DataFrame(ls_tracks, columns=['territory_id', 'player_id', 'track_id', 'campaign_id', 'campaign_type', 
+                                         'start_time', 'end_time', 'mode', 'validation_result', 'distance', 'duration'])
     rows, columns = df.shape
     logger.info(f"Imported Campaign Tracks Rows: {rows}, Columns: {columns}")
     file_storage.merge_campaign_tracks(territory_id, year, df, save_csv)
@@ -250,15 +250,12 @@ def import_campaign_subscriptions_data(territory_id, start_time, end_time=None, 
     file_storage = FileStorage()
 
     # Ottieni i dati da PlayAndGo
-    df = pd.DataFrame(columns=['territory_id', 'player_id', 'campaign_id', 'campaign_type', 
-                               'registration_date', 'group_id'])
+    # columns=['territory_id', 'player_id', 'campaign_id', 'campaign_type', 'registration_date', 'group_id']
+    ls_subscriptions = []
     for c_subscription in playandgo_engine.get_campaign_subscriptions(territory_id, start_time, end_time):
         try:
             c_subscription.registration_date = get_utc_datetime(c_subscription.registration_date)
-            if df.empty:
-                df.loc[0] = vars(c_subscription)
-            else:
-                df.loc[df.index.max() + 1] = vars(c_subscription)
+            ls_subscriptions.append(c_subscription.__dict__)
             logger.info(f"Processed campaign subscription: {c_subscription.player_id}, {c_subscription.campaign_id}")
         except Exception as e:
             logger.warning(f"Error processing campaign subscription: {c_subscription.campaign_id}, Error: {e}")
@@ -267,6 +264,8 @@ def import_campaign_subscriptions_data(territory_id, start_time, end_time=None, 
     start_time_dt = datetime.fromisoformat(start_time)
     year = start_time_dt.strftime("%Y")
 
+    df = pd.DataFrame(ls_subscriptions, columns=['territory_id', 'player_id', 'campaign_id', 'campaign_type', 
+                                                'registration_date', 'group_id'])
     rows, columns = df.shape
     logger.info(f"Imported Campaign Sybscriptions Rows: {rows}, Columns: {columns}")
     file_storage.merge_campaign_subscriptions(territory_id, year, df, save_csv)
@@ -349,7 +348,7 @@ def merge_edges(territory_id:str, year:str, save_csv=False):
 def merge_campaign_tracks(territory_id:str, year:str, campaign_id:str, save_csv=False):
     file_storage = FileStorage()
     try:
-        file_storage.merge_campaign_tracks(territory_id, year, campaign_id, save_csv)
+        file_storage.merge_campaign_tracks_by_campaign(territory_id, year, campaign_id, save_csv)
         df_info = get_df_info(file_storage, territory_id, file_storage.mapped_campaign_tracks, year)
         return df_info
     except FileNotFoundError:

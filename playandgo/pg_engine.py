@@ -8,8 +8,6 @@ def get_group_id(subscription, campaign_type) -> str:
     Extracts the company group from the subscription.
     """
     if campaign_type == "company":
-        if "groupId" in subscription and subscription["groupId"] is not None:
-            return subscription["groupId"]
         if "campaignData" in subscription and subscription["campaignData"] is not None:
             if "companyKey" in subscription["campaignData"]:
                 return subscription["campaignData"]["companyKey"]
@@ -19,6 +17,17 @@ def get_group_id(subscription, campaign_type) -> str:
                 return subscription["campaignData"]["teamId"]
     else:
         return 'null'
+
+
+def get_subscription(user, campaign_id:str):
+    """
+    Extracts the subscription for a given campaign from the user document.
+    """
+    if "roles" in user and "subscriptions" in user["roles"]:
+        for sub in user["roles"]["subscriptions"]:
+            if "campaign" in sub and sub["campaign"] == campaign_id:
+                return sub
+    return None
 
 
 class CampaignTrack:
@@ -58,9 +67,15 @@ class CampaignSubscription:
 class PlayAndGoEngine:
     
     def __init__(self):
+        # P&G MongoDB connection settings
         self.mongo_uri = os.getenv("PG_MONGO_URI", "mongodb://localhost:27017/")
         self.mongo_db = os.getenv("PG_MONGO_DB", "playngo-engine")
         self.direct_connection = eval(os.getenv("PG_MONGO_DIRECT_CONNECTION", "False"))
+        # P&G Aziendale MongoDB connection settings
+        self.company_mongo_uri = os.getenv("PG_COMPANY_MONGO_URI", "mongodb://localhost:27017/")
+        self.company_mongo_db = os.getenv("PG_COMPANY_MONGO_DB", "pgaziendale-dev")
+        self.company_direct_connection = eval(os.getenv("PG_COMPANY_MONGO_DIRECT_CONNECTION", "False"))
+
 
     def get_track(self, territory_id: str, track_id: str):
         # Connessione al server MongoDB (modifica la stringa di connessione se necessario)
@@ -203,3 +218,78 @@ class PlayAndGoEngine:
                 )
                 yield c_subscription
         client.close()
+
+
+    def get_company_subscription_info(self, territory_id: str, start_time: str, end_time: str = None):
+        # Connessione al server MongoDB (modifica la stringa di connessione se necessario)
+        client = MongoClient(self.company_mongo_uri, directConnection=self.company_direct_connection)
+
+        # Seleziona il database
+        db = client[self.company_mongo_db]
+
+        start_time_mills = int(datetime.fromisoformat(start_time).timestamp() * 1000)
+        if end_time is not None:
+            end_time_mills = int(datetime.fromisoformat(end_time).timestamp() * 1000)
+
+        employee_collection = db["employee"]
+        user_collection = db["user"]
+
+        # estrale le company
+        company_map = {}
+        company_collection = db["company"]
+        company_cursor = company_collection.find({"territoryId":territory_id})
+        for company in company_cursor:
+            company_id = str(company["_id"])
+            company_map[company_id] = company
+
+        # estrae le campagne
+        campaign_collection = db["campaign"]
+        campaign_cursor = campaign_collection.find({"territoryId":territory_id})
+        for campaign in campaign_cursor:
+            campaign_id = str(campaign["_id"])
+
+            employee_map = {}
+            # seleziona gli employee con trackingRecord.campaign_id esistente
+            employee_cursor = employee_collection.find({"trackingRecord." + campaign_id: {"$exists": True}})
+            for employee in employee_cursor:
+                # controlla se la registrazione è nel range di date
+                registration_date = employee["trackingRecord"][campaign_id]["registration"]
+                if end_time is not None:
+                    if registration_date < start_time_mills or registration_date > end_time_mills:
+                        continue
+                elif end_time is None:
+                    if registration_date < start_time_mills:
+                        continue
+                company_id = employee["companyId"]
+                if company_id not in company_map:
+                    continue
+                company_code = company_map[company_id]["code"]
+                employee_code = employee["code"]
+                employee_key = f"{company_code}__{employee_code}"
+                employee_map[employee_key] = employee
+            employee_cursor.close()
+
+            # seleziona gli user registrati alla campagna
+            user_cursor = user_collection.find({"roles.subscriptions.campaign": campaign_id})
+            for user in user_cursor:
+                sub = get_subscription(user, campaign_id)
+                if sub is None:
+                    continue
+                company_code = sub["companyCode"]
+                employee_code = sub["key"]
+                employee_key = f"{company_code}__{employee_code}"
+                if employee_key in employee_map:
+                    employee = employee_map[employee_key]
+                    c_subscription = CampaignSubscription(
+                        territory_id=territory_id,
+                        player_id=user["playerId"],
+                        campaign_id=campaign_id,
+                        campaign_type="company",
+                        registration_date=datetime.fromtimestamp(registration_date / 1000),
+                        group_id=company_code
+                    )
+                    yield c_subscription
+            user_cursor.close()
+
+        client.close()
+

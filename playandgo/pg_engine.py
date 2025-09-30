@@ -197,9 +197,9 @@ class PlayAndGoEngine:
             if campaign["type"] == "company":
                 for c_group in self.get_company_group_info(territory_id, str(campaign["_id"])):
                     yield c_group    
-            #elif campaign["type"] == "school":
-            #    for c_group in self.get_hsc_group_info(territory_id, str(campaign["_id"])):
-            #        yield c_group
+            elif campaign["type"] == "school":
+                for c_group in self.get_hsc_group_info(territory_id, str(campaign["_id"])):
+                    yield c_group
         campaign_cursor.close()
 
         client.close()
@@ -260,5 +260,24 @@ class PlayAndGoEngine:
 
 
     def get_hsc_group_info(self, territory_id: str, campaign_id: str):
-        # TODO
-        return None
+        client = MongoClient(self.hsc_mongo_uri, directConnection=self.hsc_direct_connection)
+        db = client[self.hsc_mongo_db]
+
+        initiative_collection = db["initiative"]
+        initiative_cursor = initiative_collection.find({"campaign.territoryId":territory_id, "campaign.campaignId":campaign_id})
+        for initiative in initiative_cursor:
+            team_collection = db["playerTeam"]
+            team_cursor = team_collection.find({"initiativeId":str(initiative["_id"])})
+            for team in team_cursor:
+                for player in team["members"]:
+                    c_group = CampaignGroup(
+                        territory_id=territory_id,
+                        player_id=player["playerId"],
+                        campaign_id=campaign_id,
+                        group_id=str(team["_id"])
+                    )
+                    yield c_group
+            team_cursor.close()
+        initiative_cursor.close()
+
+        client.close()

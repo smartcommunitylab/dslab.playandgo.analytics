@@ -173,7 +173,7 @@ class FileStorage:
                 how='left'
             )  
 
-            file_path = self.get_filename(territory_id, self.mapped_campaign_tracks, year)
+            file_path = self.get_filename(territory_id, self.mapped_campaign_groups, year)
             df_merged.to_parquet(file_path, engine="pyarrow") 
             if save_csv:
                 self.save_csv(file_path, df_merged)

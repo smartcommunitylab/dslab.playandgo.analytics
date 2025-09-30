@@ -63,7 +63,7 @@ def api_info_df():
     return info_map
 
 
-@app.route('/api/import/merge-campaign-tracks-group', methods=['GET'])
+@app.route('/api/import/merge-campaign-tracks-groups', methods=['GET'])
 def api_merge_campaign_tracks_group():
     start = datetime.now()
     territory_id = request.args.get('territory_id', type=str)

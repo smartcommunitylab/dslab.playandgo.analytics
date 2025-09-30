@@ -244,32 +244,30 @@ def import_campaign_tracks_data(territory_id, start_time, end_time=None, save_cs
     return info_map
 
 
-def import_campaign_subscriptions_data(territory_id, start_time, end_time=None, save_csv=False):
+def import_campaign_groups_data(territory_id:str, year:str, save_csv=False):
     # Inizializza gli engine
     playandgo_engine = PlayAndGoEngine()
     file_storage = FileStorage()
 
     # Ottieni i dati da PlayAndGo
-    # columns=['territory_id', 'player_id', 'campaign_id', 'campaign_type', 'registration_date', 'group_id']
-    ls_subscriptions = []
-    for c_subscription in playandgo_engine.get_campaign_subscriptions(territory_id, start_time, end_time):
+    # columns=['territory_id', 'player_id', 'campaign_id', 'group_id']
+    ls_groups = []
+    for c_group in playandgo_engine.get_campaign_groups(territory_id, year):
         try:
-            c_subscription.registration_date = get_utc_datetime(c_subscription.registration_date)
-            ls_subscriptions.append(c_subscription.__dict__)
-            logger.info(f"Processed campaign subscription: {c_subscription.player_id}, {c_subscription.campaign_id}")
+            ls_groups.append(c_group.__dict__)
+            logger.info(f"Processed campaign group: {c_group.player_id}, {c_group.campaign_id}")
         except Exception as e:
-            logger.warning(f"Error processing campaign subscription: {c_subscription.campaign_id}, Error: {e}")
+            logger.warning(f"Error processing campaign subscription: {c_group.player_id}, {c_group.campaign_id}, Error: {e}")
             continue
         
-    start_time_dt = datetime.fromisoformat(start_time)
-    year = start_time_dt.strftime("%Y")
+    #start_time_dt = datetime.fromisoformat(start_time)
+    #year = start_time_dt.strftime("%Y")
 
-    df = pd.DataFrame(ls_subscriptions, columns=['territory_id', 'player_id', 'campaign_id', 'campaign_type', 
-                                                'registration_date', 'group_id'])
+    df = pd.DataFrame(ls_groups, columns=['territory_id', 'player_id', 'campaign_id', 'group_id'])
     rows, columns = df.shape
-    logger.info(f"Imported Campaign Sybscriptions Rows: {rows}, Columns: {columns}")
-    file_storage.merge_campaign_subscriptions(territory_id, year, df, save_csv)
-    info_map = {"name": file_storage.campaign_subscriptions, "rows": rows}
+    logger.info(f"Imported Campaign Groups Rows: {rows}, Columns: {columns}")
+    file_storage.merge_campaign_groups(territory_id, year, df, save_csv)
+    info_map = {"name": file_storage.campaign_groups, "rows": rows}
     return info_map
 
 
@@ -291,10 +289,10 @@ def get_df_info_list(territory_id:str, year:str):
     info_list = []
 
     try:
-        df_info = get_df_info(file_storage, territory_id, file_storage.campaign_subscriptions, year)
+        df_info = get_df_info(file_storage, territory_id, file_storage.campaign_groups, year)
         info_list.append(df_info)
     except FileNotFoundError:
-        logger.error(f"File not found for campaign_subscriptions in territory {territory_id} for year {year}")
+        logger.error(f"File not found for campaign_groups in territory {territory_id} for year {year}")
 
     try:
         df_info = get_df_info(file_storage, territory_id, file_storage.campaign_tracks, year)
@@ -309,22 +307,10 @@ def get_df_info_list(territory_id:str, year:str):
         logger.error(f"File not found for tracks in territory {territory_id} for year {year}")
 
     try:
-        df_info = get_df_info(file_storage, territory_id, file_storage.tracks_info, year)
-        info_list.append(df_info)
-    except FileNotFoundError:
-        logger.error(f"File not found for tracks_info in territory {territory_id} for year {year}")
-
-    try:
         df_info = get_df_info(file_storage, territory_id, file_storage.nearest_edges, year)
         info_list.append(df_info)
     except FileNotFoundError:
         logger.error(f"File not found for nearest_edges in territory {territory_id} for year {year}")
-
-    try:
-        df_info = get_df_info(file_storage, territory_id, file_storage.h3_info, year)
-        info_list.append(df_info)
-    except FileNotFoundError:
-        logger.error(f"File not found for h3_info in territory {territory_id} for year {year}")
 
     try:
         df_info = get_df_info(file_storage, territory_id, file_storage.way_shapes)
@@ -335,20 +321,10 @@ def get_df_info_list(territory_id:str, year:str):
     return info_list
 
 
-def merge_edges(territory_id:str, year:str, save_csv=False):
+def merge_campaign_tracks_groups(territory_id:str, year:str, campaign_id:str, save_csv=False):
     file_storage = FileStorage()
     try:
-        file_storage.merge_mapped_edges(territory_id, year, save_csv)
-        df_info = get_df_info(file_storage, territory_id, file_storage.mapped_edges, year)
-        return df_info
-    except FileNotFoundError:
-        logger.error(f"File not found for campaign_subscriptions in territory {territory_id} for year {year}")
-
-
-def merge_campaign_tracks(territory_id:str, year:str, campaign_id:str, save_csv=False):
-    file_storage = FileStorage()
-    try:
-        file_storage.merge_campaign_tracks_by_campaign(territory_id, year, campaign_id, save_csv)
+        file_storage.merge_campaign_tracks_groups_by_campaign(territory_id, year, campaign_id, save_csv)
         df_info = get_df_info(file_storage, territory_id, file_storage.mapped_campaign_tracks, year)
         return df_info
     except FileNotFoundError:

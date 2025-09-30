@@ -5,8 +5,8 @@ from flask import Flask, request, Response
 
 from datetime import datetime
 
-from import_tracks_data import import_campaign_tracks_data, import_campaign_subscriptions_data, import_nearest_edges_by_trace 
-from import_tracks_data import get_df_info_list, merge_edges, merge_campaign_tracks
+from import_tracks_data import import_campaign_tracks_data, import_campaign_groups_data, import_nearest_edges_by_trace 
+from import_tracks_data import get_df_info_list, merge_campaign_tracks_groups
 
 app = Flask(__name__)
 server_port = os.getenv("SERVER_PORT", 8078)
@@ -26,16 +26,15 @@ def api_import_campaign_tracks_data():
     return info_map
 
 
-@app.route('/api/import/campaign-subs', methods=['GET'])
-def api_import_campaign_subscriptions_data():
+@app.route('/api/import/campaign-groups', methods=['GET'])
+def api_import_campaign_groups_data():
     start = datetime.now()
     territory_id = request.args.get('territory_id', type=str)
-    start_time = request.args.get('start_time', type=str)
-    end_time = request.args.get('end_time', default=None, type=str)
+    year = request.args.get('year', type=str)
     save_csv = request.args.get('save_csv', default=False, type=bool)
-    info_map = import_campaign_subscriptions_data(territory_id, start_time, end_time, save_csv)
+    info_map = import_campaign_groups_data(territory_id, year, save_csv)
     stop = datetime.now()
-    print(f"api_import_campaign_subscriptions_data Territory ID: {territory_id}, Time:{(stop - start).total_seconds()} seconds")
+    print(f"api_import_campaign_groups_data Territory ID: {territory_id}, Time:{(stop - start).total_seconds()} seconds")
     return info_map
 
 
@@ -64,29 +63,18 @@ def api_info_df():
     return info_map
 
 
-@app.route('/api/import/merge-edges', methods=['GET'])
-def api_merge_nodes():
-    start = datetime.now()
-    territory_id = request.args.get('territory_id', type=str)
-    year = request.args.get('year', type=str)
-    save_csv = request.args.get('save_csv', default=False, type=bool)
-    info_map = merge_edges(territory_id, year, save_csv)
-    stop = datetime.now()
-    print(f"api_merge_nodes Territory ID: {territory_id}, Time:{(stop - start).total_seconds()} seconds")
-    return info_map
-
-
-@app.route('/api/import/merge-campaign-tracks', methods=['GET'])
-def api_merge_campaign_tracks():
+@app.route('/api/import/merge-campaign-tracks-group', methods=['GET'])
+def api_merge_campaign_tracks_group():
     start = datetime.now()
     territory_id = request.args.get('territory_id', type=str)
     year = request.args.get('year', type=str)
     campaign_id = request.args.get('campaign_id', type=str)
     save_csv = request.args.get('save_csv', default=False, type=bool)
-    info_map = merge_campaign_tracks(territory_id, year, campaign_id, save_csv)
+    info_map = merge_campaign_tracks_groups(territory_id, year, campaign_id, save_csv)
     stop = datetime.now()
-    print(f"api_merge_campaign_tracks Territory ID: {territory_id}, Time:{(stop - start).total_seconds()} seconds")
+    print(f"api_merge_campaign_tracks_groups Territory ID: {territory_id}, Time:{(stop - start).total_seconds()} seconds")
     return info_map
+
 
 if __name__ == "__main__":    
     app.run(host='0.0.0.0', port=server_port)

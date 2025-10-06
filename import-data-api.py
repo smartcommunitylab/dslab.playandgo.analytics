@@ -6,7 +6,7 @@ from flask import Flask, request, Response
 from datetime import datetime
 
 from import_tracks_data import import_campaign_tracks_data, import_campaign_groups_data, import_nearest_edges_by_trace 
-from import_tracks_data import get_df_info_list, merge_campaign_tracks_groups
+from import_tracks_data import get_df_info_list, merge_campaign_tracks_groups, import_campaign_tracks_info_data
 
 app = Flask(__name__)
 server_port = os.getenv("SERVER_PORT", 8078)
@@ -35,6 +35,18 @@ def api_import_campaign_groups_data():
     info_map = import_campaign_groups_data(territory_id, year, save_csv)
     stop = datetime.now()
     print(f"api_import_campaign_groups_data Territory ID: {territory_id}, Time:{(stop - start).total_seconds()} seconds")
+    return info_map
+
+
+@app.route('/api/import/campaign-tracks-info', methods=['GET'])
+def api_import_campaign_tracks_info_data():
+    start = datetime.now()
+    territory_id = request.args.get('territory_id', type=str)
+    year = request.args.get('year', type=str)
+    save_csv = request.args.get('save_csv', default=False, type=bool)
+    info_map = import_campaign_tracks_info_data(territory_id, year, save_csv)
+    stop = datetime.now()
+    print(f"api_import_campaign_tracks_info_data Territory ID: {territory_id}, Time:{(stop - start).total_seconds()} seconds")
     return info_map
 
 

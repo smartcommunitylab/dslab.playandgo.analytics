@@ -61,6 +61,21 @@ class CampaignGroup:
             campaign_id={self.campaign_id}, group_id={self.group_id})"
 
 
+class SpecificCampaingTrackInfo:
+    def __init__(self, territory_id, player_id, track_id, multimodal_id, campaign_id, way_back, location_id):
+        self.territory_id = territory_id
+        self.player_id = player_id
+        self.track_id = track_id
+        self.campaign_id = campaign_id
+        self.way_back = way_back
+        self.location_id = location_id 
+        self.multimodal_id = multimodal_id 
+
+    def __repr__(self):
+        return f"SpecificCampaingTrackInfo(territory_id={self.territory_id}, player_id={self.player_id}, \
+            track_id={self.track_id}, multimodal_id={self.multimodal_id}, campaign_id={self.campaign_id}, way_back={self.way_back}, location_id={self.location_id})"
+
+
 class PlayAndGoEngine:
     
     def __init__(self):
@@ -242,8 +257,8 @@ class PlayAndGoEngine:
             sub = get_company_subscription(user, campaign_id)
             if sub is None:
                 continue
-            company_code = sub["companyCode"]
-            employee_code = sub["key"]
+            company_code = str(sub["companyCode"])
+            employee_code = str(sub["key"])
             employee_key = f"{company_code}__{employee_code}"
             if employee_key in employee_map:
                 employee = employee_map[employee_key]
@@ -279,5 +294,60 @@ class PlayAndGoEngine:
                     yield c_group
             team_cursor.close()
         initiative_cursor.close()
+
+        client.close()
+
+
+    def get_campaign_tracks_info(self, territory_id: str, year: str):
+        # Connessione al server MongoDB (modifica la stringa di connessione se necessario)
+        client = MongoClient(self.mongo_uri, directConnection=self.direct_connection)
+        # Seleziona il database
+        db = client[self.mongo_db]
+
+        # estrae le campagne
+        campaign_collection = db["campaigns"]
+        campaign_cursor = campaign_collection.find({"territoryId":territory_id})
+        for campaign in campaign_cursor:
+            if campaign["type"] != "company" and campaign["type"] != "school":
+                continue
+            if campaign["dateFrom"].strftime("%Y") != year:
+                continue
+            if campaign["type"] == "company":
+                for c_group in self.get_company_tracks_info(territory_id, str(campaign["_id"])):
+                    yield c_group    
+            elif campaign["type"] == "school":
+                continue
+                #for c_group in self.get_hsc_group_info(territory_id, str(campaign["_id"])):
+                #    yield c_group
+        campaign_cursor.close()
+
+        client.close()
+
+
+    def get_company_tracks_info(self, territory_id: str, campaign_id: str):
+        # Connessione al server MongoDB (modifica la stringa di connessione se necessario)
+        client = MongoClient(self.company_mongo_uri, directConnection=self.company_direct_connection)
+
+        # Seleziona il database
+        db = client[self.company_mongo_db]
+
+        collection = db["dayStat"]
+
+        cursor = collection.find({"campaign": campaign_id})
+        for doc in cursor:
+            if "tracks" not in doc:
+                continue
+            for track in doc["tracks"]:
+                s_info = SpecificCampaingTrackInfo(
+                    territory_id=territory_id,
+                    player_id=doc["playerId"],
+                    track_id=track["trackId"],
+                    multimodal_id=track["multimodalId"],
+                    campaign_id=campaign_id,
+                    way_back=track.get("wayBack", False),
+                    location_id=track.get("locationId", None)
+                )
+                yield s_info
+        cursor.close()
 
         client.close()

@@ -257,7 +257,7 @@ def import_campaign_groups_data(territory_id:str, year:str, save_csv=False):
             ls_groups.append(c_group.__dict__)
             logger.info(f"Processed campaign group: {c_group.player_id}, {c_group.campaign_id}")
         except Exception as e:
-            logger.warning(f"Error processing campaign subscription: {c_group.player_id}, {c_group.campaign_id}, Error: {e}")
+            logger.warning(f"Error processing campaign group: {c_group.player_id}, {c_group.campaign_id}, Error: {e}")
             continue
         
     #start_time_dt = datetime.fromisoformat(start_time)
@@ -329,3 +329,30 @@ def merge_campaign_tracks_groups(territory_id:str, year:str, campaign_id:str, sa
         return df_info
     except FileNotFoundError:
         logger.error(f"File not found for campaign_subscriptions in territory {territory_id} for year {year}")
+
+
+def import_campaign_tracks_info_data(territory_id:str, year:str, save_csv=False):
+    # Inizializza gli engine
+    playandgo_engine = PlayAndGoEngine()
+    file_storage = FileStorage()
+
+    # columns=['territory_id', 'player_id', 'campaign_id', 'track_id', 'multimodal_id', 'way_back', 'location_id']
+    ls_tracks = []
+    for c_track in playandgo_engine.get_campaign_tracks_info(territory_id, year):
+        try:
+            ls_tracks.append(c_track.__dict__)
+            logger.info(f"Processed campaign info track: {c_track.player_id}, {c_track.track_id}, {c_track.campaign_id}")
+        except Exception as e:
+            logger.warning(f"Error processing campaign info track: {c_track.player_id}, {c_track.track_id}, {c_track.campaign_id}, Error: {e}")
+            continue
+        
+    #start_time_dt = datetime.fromisoformat(start_time)
+    #year = start_time_dt.strftime("%Y")
+
+    df = pd.DataFrame(ls_tracks, columns=['territory_id', 'player_id', 'campaign_id', 'track_id', 'multimodal_id', 'way_back', 'location_id'])
+    rows, columns = df.shape
+    logger.info(f"Imported Campaign Info Track Rows: {rows}, Columns: {columns}")
+    file_storage.merge_campaign_tracks_info(territory_id, year, df, save_csv)
+    info_map = {"name": file_storage.campaign_tracks_info, "rows": rows}
+    return info_map
+

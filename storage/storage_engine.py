@@ -173,6 +173,10 @@ class FileStorage:
             logger.info(f"Campaign Groups Rows: {df_campaign_groups.shape[0]}")
             s, df_campaign_tracks_info = self.load_dataframe(territory_id, self.campaign_tracks_info, year)
             logger.info(f"Campaign Tracks Info Rows: {df_campaign_tracks_info.shape[0]}")
+            s, df_tracks_info = self.load_dataframe(territory_id, self.tracks_info, year)
+            logger.info(f"Tracks Info Rows: {df_tracks_info.shape[0]}")
+            # Rimuove le colonne mode e start_time da df_tracks_info
+            df_tracks_info = df_tracks_info.drop(columns=['mode', 'start_time'], errors='ignore')
 
             # Filtra per campaign_id
             df_campaign_tracks = df_campaign_tracks[df_campaign_tracks['campaign_id'] == campaign_id]
@@ -188,14 +192,21 @@ class FileStorage:
             #tracks_not_in_subs = df_campaign_tracks[~df_campaign_tracks['player_id'].isin(player_ids_subs)]
             #logger.info(tracks_not_in_subs)
 
-            # Merge sulle colonne territory_id, player_id, campaign_id
+            # Aggiunge group_id con merge sulle colonne territory_id, player_id, campaign_id
             df_merged = pd.merge(
                 df_campaign_tracks,
                 df_campaign_groups,
                 on=['territory_id', 'player_id', 'campaign_id'],
                 how='left'
             )  
-            # Fai il merge con left join per aggiungere le colonne a df_merged
+            # Aggiunge multimodal_id con merge sulle colonne player_id e track_id
+            df_merged = pd.merge(
+                df_merged,
+                df_tracks_info,
+                on=['player_id', 'track_id'],
+                how='left'
+            )
+            # Aggiunge way_back e location_id con merge con left join per aggiungere le colonne a df_merged
             df_merged = pd.merge(
                 df_merged,
                 df_campaign_tracks_info,

@@ -349,7 +349,7 @@ def import_campaign_tracks_info_data(territory_id:str, year:str, save_csv=False)
     #start_time_dt = datetime.fromisoformat(start_time)
     #year = start_time_dt.strftime("%Y")
 
-    df = pd.DataFrame(ls_tracks, columns=['territory_id', 'player_id', 'campaign_id', 'track_id', 'multimodal_id', 'way_back', 'location_id'])
+    df = pd.DataFrame(ls_tracks, columns=['territory_id', 'player_id', 'campaign_id', 'track_id', 'way_back', 'location_id'])
     rows, columns = df.shape
     logger.info(f"Imported Campaign Info Track Rows: {rows}, Columns: {columns}")
     file_storage.merge_campaign_tracks_info(territory_id, year, df, save_csv)

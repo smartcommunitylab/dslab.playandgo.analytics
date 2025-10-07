@@ -62,18 +62,17 @@ class CampaignGroup:
 
 
 class SpecificCampaingTrackInfo:
-    def __init__(self, territory_id, player_id, track_id, multimodal_id, campaign_id, way_back, location_id):
+    def __init__(self, territory_id, player_id, track_id, campaign_id, way_back, location_id):
         self.territory_id = territory_id
         self.player_id = player_id
         self.track_id = track_id
         self.campaign_id = campaign_id
         self.way_back = way_back
         self.location_id = location_id 
-        self.multimodal_id = multimodal_id 
 
     def __repr__(self):
         return f"SpecificCampaingTrackInfo(territory_id={self.territory_id}, player_id={self.player_id}, \
-            track_id={self.track_id}, multimodal_id={self.multimodal_id}, campaign_id={self.campaign_id}, way_back={self.way_back}, location_id={self.location_id})"
+            track_id={self.track_id}, campaign_id={self.campaign_id}, way_back={self.way_back}, location_id={self.location_id})"
 
 
 class PlayAndGoEngine:
@@ -344,7 +343,6 @@ class PlayAndGoEngine:
                     territory_id=territory_id,
                     player_id=doc["playerId"],
                     track_id=track["trackId"],
-                    multimodal_id=track["multimodalId"],
                     campaign_id=campaign_id,
                     way_back=track.get("wayBack", False),
                     location_id=track.get("locationId", None)

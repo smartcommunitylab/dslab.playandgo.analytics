@@ -206,7 +206,7 @@ class FileStorage:
                 on=['player_id', 'track_id'],
                 how='left'
             )
-            # Aggiunge way_back e location_id con merge con left join per aggiungere le colonne a df_merged
+            # Aggiunge way_back e location_id con merge sulle colonne territory_id, track_id, player_id, campaign_id
             df_merged = pd.merge(
                 df_merged,
                 df_campaign_tracks_info,

@@ -92,6 +92,27 @@ class PlayAndGoEngine:
         self.hsc_direct_connection = eval(os.getenv("PG_HSC_MONGO_DIRECT_CONNECTION", "False"))
 
 
+    def get_campaigns(self, territory_id: str):
+        # Connessione al server MongoDB (modifica la stringa di connessione se necessario)
+        client = MongoClient(self.mongo_uri, directConnection=self.direct_connection)
+
+        # Seleziona il database
+        db = client[self.mongo_db]
+
+        # Seleziona la collection
+        collection = db["campaigns"]
+
+        # Ottieni un cursore per tutti i documenti della collection
+        cursor = collection.find({"territoryId":territory_id})
+        # Restituisce la lista delle campagne
+        campaigns = []
+        for campaign in cursor:
+            campaigns.append(campaign)
+        cursor.close()
+        client.close()  
+        return campaigns
+    
+    
     def get_track(self, territory_id: str, track_id: str):
         # Connessione al server MongoDB (modifica la stringa di connessione se necessario)
         client = MongoClient(self.mongo_uri, directConnection=self.direct_connection)

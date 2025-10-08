@@ -163,7 +163,7 @@ class FileStorage:
                 self.save_csv(file_path, df)
 
 
-    def merge_campaign_tracks_groups_by_campaign(self, territory_id:str, year:str, campaign_id:str, save_csv:bool=False):
+    def merge_df_campaign_tracks_groups_by_campaign(self, territory_id:str, year:str, campaign_id:str):
         """Merge data to a file."""
         self.check_directory(territory_id)
         try:
@@ -213,11 +213,7 @@ class FileStorage:
                 on=['territory_id', 'track_id', 'player_id', 'campaign_id'],
                 how='left'
             )
-
-            file_path = self.get_filename(territory_id, self.mapped_campaign_groups, year)
-            df_merged.to_parquet(file_path, engine="pyarrow") 
-            if save_csv:
-                self.save_csv(file_path, df_merged)
+            return df_merged
         except FileNotFoundError:
             raise FileNotFoundError(f"Required files for merging mapped edges not found for territory {territory_id} and year {year}.")
 
@@ -231,6 +227,13 @@ class FileStorage:
         logger.info(f"Storage Rows: {rows}, Columns: {columns}")
         return combined_df
     
+
+    def save_df(self, territory_id:str, df_file:str, df:pd.DataFrame, year:str=None, save_csv:bool=False):
+        file_path = self.get_filename(territory_id, df_file, year)
+        df.to_parquet(file_path, engine="pyarrow") 
+        if save_csv:
+            self.save_csv(file_path, df)
+
 
     def save_csv(self, orig_path:str, df:pd.DataFrame):
         """Save data to a file."""

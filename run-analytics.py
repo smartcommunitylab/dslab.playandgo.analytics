@@ -4,6 +4,7 @@ from datetime import datetime
 
 from playandgo.pg_engine import PlayAndGoEngine
 from storage.storage_engine import FileStorage
+from analytics.analytics import generate_report
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s - %(name)s: %(message)s')
 logger = logging.getLogger(__name__)
@@ -35,7 +36,8 @@ def analyze_territory(playandgo_engine: PlayAndGoEngine, file_storage: FileStora
             s, df_edges = file_storage.load_dataframe(territory_id, file_storage.nearest_edges, year)
             rows, columns = df_edges.shape
             logger.info(f"Loaded Nearest Edges Rows: {rows}, Columns: {columns}")
-            # perform analytics
+            # TODO perform analytics
+            generate_report(territory_id, campaign_id, file_storage)
         except Exception as e:
             logger.warning(f"Error processing data {campaign_id}: {e}")        
 

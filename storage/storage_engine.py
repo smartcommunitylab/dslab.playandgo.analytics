@@ -249,3 +249,27 @@ class FileStorage:
             return file_stats.st_size, pd.read_parquet(file_path, engine="pyarrow")
         else:
             raise FileNotFoundError(f"File {file_path} does not exist.")
+
+
+    def load_multiple_dataframes(self, territory_id:str, df_file:str, years:list) -> pd.DataFrame:
+        """Load multiple dataframes from files."""
+        df_result = None
+        for year in years:
+            s, df = self.load_dataframe(territory_id, df_file, year)
+            # append dataframe to df_result
+            if df_result is None:
+                df_result = df
+            else:
+                df_result = pd.concat([df_result, df], ignore_index=True)
+        return df_result
+    
+
+    def concat_dfs(self, df_list:list) -> pd.DataFrame:
+        """Concatenate a list of dataframes."""
+        df_result = None
+        for df in df_list:
+            if df_result is None:
+                df_result = df
+            else:
+                df_result = pd.concat([df_result, df], ignore_index=True)
+        return df_result

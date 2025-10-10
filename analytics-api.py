@@ -44,6 +44,7 @@ def get_h3_geo(territory_id, year, mode, target_resolution):
     return h3_gdf.to_json()
 
 
+
 app = Flask(__name__)
 server_port = os.getenv("SERVER_PORT", 8078)
 psyco_engine = PsycoEngine()
@@ -61,6 +62,24 @@ def api_get_h3_geo():
     stop = datetime.now()
     print(f"api_get_h3_geo Territory ID: {territory_id}, Time:{(stop - start).total_seconds()} seconds")
     return json
+
+
+@app.route('/api/geo/campaign', methods=['GET'])
+def api_get_campaign_geo():
+    territory_id = request.args.get('territory_id', type=str)
+    campaign_id = request.args.get('campaign_id', type=str)
+    group_id = request.args.get('group_id', type=str, default=None)
+
+    if not territory_id:
+        return {"error": "territory_id is required"}, 400
+
+    file_path = FileStorage().get_campaign_analysis_filename(territory_id, campaign_id, group_id)
+    if not os.path.exists(file_path):
+        return {"error": "File not found"}, 404
+
+    # Leggi il Parquet e restituisci GeoJSON
+    gdf = gpd.read_parquet(file_path)
+    return gdf.to_json()
 
 
 @app.route('/')

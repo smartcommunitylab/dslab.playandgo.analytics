@@ -1,5 +1,7 @@
 import os
 import h3
+import logging
+
 from datetime import datetime
 
 import matplotlib.pyplot as plt
@@ -13,6 +15,8 @@ from psycopg.psyco_engine import PsycoEngine
 
 from flask import Flask, request, render_template
 
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s - %(name)s: %(message)s')
+logger = logging.getLogger(__name__)
 
 def h3_to_geojson(h3_cell):
     """Convert H3 index to GeoJSON Polygon."""
@@ -79,6 +83,8 @@ def api_get_campaign_geo():
 
     # Leggi il Parquet e restituisci GeoJSON
     gdf = gpd.read_parquet(file_path)
+    rows, columns = gdf.shape
+    logger.info(f"H3 data {territory_id}, {campaign_id}, {group_id} Rows: {rows}, Columns: {columns}")
     return gdf.to_json()
 
 
@@ -86,6 +92,9 @@ def api_get_campaign_geo():
 def home():
     return render_template('index.html')
 
+@app.route('/campaign')
+def campaign_h3():
+    return render_template('campaign_h3.html')
 
 if __name__ == "__main__":    
     app.run(host='0.0.0.0', port=server_port)

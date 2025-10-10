@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+import csv
 import logging
 
 logger = logging.getLogger(__name__)
@@ -238,7 +239,7 @@ class FileStorage:
     def save_csv(self, orig_path:str, df:pd.DataFrame):
         """Save data to a file."""
         file_path = orig_path.replace(".parquet", ".csv")
-        df.to_csv(file_path, index=False)                   
+        df.to_csv(file_path, index=False, quoting=csv.QUOTE_NONNUMERIC)                   
 
 
     def load_dataframe(self, territory_id:str, df_file:str, year:str=None) -> tuple:

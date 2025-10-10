@@ -38,6 +38,14 @@ class FileStorage:
             return f"{self.store_path}/{territory_id}/{df_file}.parquet"
 
 
+    def get_campaign_analysis_filename(self, territory_id:str, campaign_id:str, group_id:str=None) -> str:
+        """Get the filename for a campaign analysis."""
+        if group_id is None:
+            return f"{self.store_path}/{territory_id}/analysis_{campaign_id}.parquet"         
+        else:
+            return f"{self.store_path}/{territory_id}/analysis_{campaign_id}_{group_id}.parquet"
+
+
     def merge_campaign_tracks(self, territory_id:str, year:str, df:pd.DataFrame, save_csv:bool=False):
         """Merge data to a file."""
         self.check_directory(territory_id)

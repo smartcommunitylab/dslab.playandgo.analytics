@@ -244,7 +244,7 @@ def import_campaign_tracks_data(territory_id, start_time, end_time=None, save_cs
     return info_map
 
 
-def import_campaign_groups_data(territory_id:str, year:str, save_csv=False):
+def import_campaign_groups_data(territory_id:str, save_csv=False):
     # Inizializza gli engine
     playandgo_engine = PlayAndGoEngine()
     file_storage = FileStorage()
@@ -252,7 +252,7 @@ def import_campaign_groups_data(territory_id:str, year:str, save_csv=False):
     # Ottieni i dati da PlayAndGo
     # columns=['territory_id', 'player_id', 'campaign_id', 'group_id']
     ls_groups = []
-    for c_group in playandgo_engine.get_campaign_groups(territory_id, year):
+    for c_group in playandgo_engine.get_campaign_groups(territory_id):
         try:
             ls_groups.append(c_group.__dict__)
             logger.info(f"Processed campaign group: {c_group.player_id}, {c_group.campaign_id}")
@@ -266,7 +266,7 @@ def import_campaign_groups_data(territory_id:str, year:str, save_csv=False):
     df = pd.DataFrame(ls_groups, columns=['territory_id', 'player_id', 'campaign_id', 'group_id'])
     rows, columns = df.shape
     logger.info(f"Imported Campaign Groups Rows: {rows}, Columns: {columns}")
-    file_storage.merge_campaign_groups(territory_id, year, df, save_csv)
+    file_storage.merge_campaign_groups(territory_id, df, save_csv)
     info_map = {"name": file_storage.campaign_groups, "rows": rows}
     return info_map
 
@@ -289,7 +289,7 @@ def get_df_info_list(territory_id:str, year:str):
     info_list = []
 
     try:
-        df_info = get_df_info(file_storage, territory_id, file_storage.campaign_groups, year)
+        df_info = get_df_info(file_storage, territory_id, file_storage.campaign_groups)
         info_list.append(df_info)
     except FileNotFoundError:
         logger.error(f"File not found for campaign_groups in territory {territory_id} for year {year}")
@@ -332,14 +332,14 @@ def merge_campaign_tracks_groups(territory_id:str, year:str, campaign_id:str, sa
         logger.error(f"File not found for campaign_subscriptions in territory {territory_id} for year {year}")
 
 
-def import_campaign_tracks_info_data(territory_id:str, year:str, save_csv=False):
+def import_campaign_tracks_info_data(territory_id:str, start_time, end_time=None, save_csv=False):
     # Inizializza gli engine
     playandgo_engine = PlayAndGoEngine()
     file_storage = FileStorage()
 
     # columns=['territory_id', 'player_id', 'campaign_id', 'track_id', 'multimodal_id', 'way_back', 'location_id']
     ls_tracks = []
-    for c_track in playandgo_engine.get_campaign_tracks_info(territory_id, year):
+    for c_track in playandgo_engine.get_campaign_tracks_info(territory_id, start_time, end_time):
         try:
             ls_tracks.append(c_track.__dict__)
             logger.info(f"Processed campaign info track: {c_track.player_id}, {c_track.track_id}, {c_track.campaign_id}")
@@ -347,8 +347,8 @@ def import_campaign_tracks_info_data(territory_id:str, year:str, save_csv=False)
             logger.warning(f"Error processing campaign info track: {c_track.player_id}, {c_track.track_id}, {c_track.campaign_id}, Error: {e}")
             continue
         
-    #start_time_dt = datetime.fromisoformat(start_time)
-    #year = start_time_dt.strftime("%Y")
+    start_time_dt = datetime.fromisoformat(start_time)
+    year = start_time_dt.strftime("%Y")
 
     df = pd.DataFrame(ls_tracks, columns=['territory_id', 'player_id', 'campaign_id', 'track_id', 'way_back', 'location_id'])
     rows, columns = df.shape

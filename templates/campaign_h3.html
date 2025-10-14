@@ -15,10 +15,10 @@
 <body>
     <h2>Mappa H3</h2>
     <div class="controls">
-        <label>Territory ID: <input type="text" id="territory_id" value="L"></label>
+        <label>Territory ID: <input type="text" id="territory_id" value="Ferrara"></label>
         <label>Campagna ID: <input type="text" id="campaign_id" value="683ebf4c2feea8526dcc1cee"></label>
         <label>Codice Azienda: <input type="text" id="group_id" value="IT01384580385"></label>
-        <label>Target Resolution: <input type="number" id="target_resolution" value="8" min="0" max="15"></label>
+        <label>Target Resolution: <input type="number" id="target_resolution" value="8" min="0" max="13"></label>
         <button onclick="loadGeoJson()">Load</button>
     </div>
     <!-- Loader -->
@@ -50,8 +50,9 @@
             var territory_id = document.getElementById('territory_id').value;
             var campaign_id = document.getElementById('campaign_id').value;
             var group_id = document.getElementById('group_id').value;
+            var target_resolution = document.getElementById('target_resolution').value;
 
-            var url = `/api/geo/campaign?territory_id=${encodeURIComponent(territory_id)}&campaign_id=${encodeURIComponent(campaign_id)}&group_id=${encodeURIComponent(group_id)}`;
+            var url = `/api/geo/campaign?territory_id=${encodeURIComponent(territory_id)}&campaign_id=${encodeURIComponent(campaign_id)}&group_id=${encodeURIComponent(group_id)}&target_resolution=${encodeURIComponent(target_resolution)}`;
 
             showLoader(true);
             fetch(url)

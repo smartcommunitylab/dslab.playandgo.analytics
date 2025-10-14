@@ -30,9 +30,8 @@ def api_import_campaign_tracks_data():
 def api_import_campaign_groups_data():
     start = datetime.now()
     territory_id = request.args.get('territory_id', type=str)
-    year = request.args.get('year', type=str)
     save_csv = request.args.get('save_csv', default=False, type=bool)
-    info_map = import_campaign_groups_data(territory_id, year, save_csv)
+    info_map = import_campaign_groups_data(territory_id, save_csv)
     stop = datetime.now()
     print(f"api_import_campaign_groups_data Territory ID: {territory_id}, Time:{(stop - start).total_seconds()} seconds")
     return info_map
@@ -42,9 +41,10 @@ def api_import_campaign_groups_data():
 def api_import_campaign_tracks_info_data():
     start = datetime.now()
     territory_id = request.args.get('territory_id', type=str)
-    year = request.args.get('year', type=str)
+    start_time = request.args.get('start_time', type=str)
+    end_time = request.args.get('end_time', default=None, type=str)
     save_csv = request.args.get('save_csv', default=False, type=bool)
-    info_map = import_campaign_tracks_info_data(territory_id, year, save_csv)
+    info_map = import_campaign_tracks_info_data(territory_id, start_time, end_time, save_csv)
     stop = datetime.now()
     print(f"api_import_campaign_tracks_info_data Territory ID: {territory_id}, Time:{(stop - start).total_seconds()} seconds")
     return info_map

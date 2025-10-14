@@ -136,10 +136,10 @@ class FileStorage:
                 self.save_csv(file_path, df)
 
 
-    def merge_campaign_groups(self, territory_id:str, year:str, df:pd.DataFrame, save_csv:bool=False):
+    def merge_campaign_groups(self, territory_id:str, df:pd.DataFrame, save_csv:bool=False):
         """Merge data to a file."""
         self.check_directory(territory_id)
-        file_path = self.get_filename(territory_id, self.campaign_groups, year)
+        file_path = self.get_filename(territory_id, self.campaign_groups)
         if os.path.exists(file_path):
             existing_df = pd.read_parquet(file_path, engine="pyarrow")
             combined_df = self.merge_dataframes(existing_df, df, ['territory_id', 'player_id', 'campaign_id'])
@@ -178,7 +178,7 @@ class FileStorage:
         try:
             s, df_campaign_tracks = self.load_dataframe(territory_id, self.campaign_tracks, year)
             logger.info(f"Campaign Tracks Rows: {df_campaign_tracks.shape[0]}")
-            s, df_campaign_groups = self.load_dataframe(territory_id, self.campaign_groups, year)
+            s, df_campaign_groups = self.load_dataframe(territory_id, self.campaign_groups)
             logger.info(f"Campaign Groups Rows: {df_campaign_groups.shape[0]}")
             s, df_campaign_tracks_info = self.load_dataframe(territory_id, self.campaign_tracks_info, year)
             logger.info(f"Campaign Tracks Info Rows: {df_campaign_tracks_info.shape[0]}")

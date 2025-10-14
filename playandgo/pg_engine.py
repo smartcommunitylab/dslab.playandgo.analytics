@@ -1,7 +1,14 @@
 import os
+from datetime import timezone
 from pymongo import MongoClient
 from datetime import datetime
 from bson.objectid import ObjectId
+
+
+def get_utc_datetime(dt):
+    dt = dt.replace(tzinfo=timezone.utc) if dt.tzinfo is None else dt
+    return dt
+
 
 def get_group_id(subscription, campaign_type) -> str:
     """
@@ -217,7 +224,7 @@ class PlayAndGoEngine:
         client.close()
 
 
-    def get_campaign_groups(self, territory_id: str, year: str):
+    def get_campaign_groups(self, territory_id: str):
         # Connessione al server MongoDB (modifica la stringa di connessione se necessario)
         client = MongoClient(self.mongo_uri, directConnection=self.direct_connection)
         # Seleziona il database
@@ -228,8 +235,6 @@ class PlayAndGoEngine:
         campaign_cursor = campaign_collection.find({"territoryId":territory_id})
         for campaign in campaign_cursor:
             if campaign["type"] != "company" and campaign["type"] != "school":
-                continue
-            if campaign["dateFrom"].strftime("%Y") != year:
                 continue
             if campaign["type"] == "company":
                 for c_group in self.get_company_group_info(territory_id, str(campaign["_id"])):
@@ -320,7 +325,7 @@ class PlayAndGoEngine:
         client.close()
 
 
-    def get_campaign_tracks_info(self, territory_id: str, year: str):
+    def get_campaign_tracks_info(self, territory_id: str, start_time: str, end_time: str = None):
         # Connessione al server MongoDB (modifica la stringa di connessione se necessario)
         client = MongoClient(self.mongo_uri, directConnection=self.direct_connection)
         # Seleziona il database
@@ -332,10 +337,8 @@ class PlayAndGoEngine:
         for campaign in campaign_cursor:
             if campaign["type"] != "company" and campaign["type"] != "school":
                 continue
-            if campaign["dateFrom"].strftime("%Y") != year:
-                continue
             if campaign["type"] == "company":
-                for c_group in self.get_company_tracks_info(territory_id, str(campaign["_id"])):
+                for c_group in self.get_company_tracks_info(territory_id, str(campaign["_id"]), start_time, end_time):
                     yield c_group    
             elif campaign["type"] == "school":
                 continue
@@ -346,7 +349,7 @@ class PlayAndGoEngine:
         client.close()
 
 
-    def get_company_tracks_info(self, territory_id: str, campaign_id: str):
+    def get_company_tracks_info(self, territory_id: str, campaign_id: str, start_time: str, end_time: str = None):
         # Connessione al server MongoDB (modifica la stringa di connessione se necessario)
         client = MongoClient(self.company_mongo_uri, directConnection=self.company_direct_connection)
 
@@ -355,11 +358,21 @@ class PlayAndGoEngine:
 
         collection = db["dayStat"]
 
+        start_time_dt = datetime.fromisoformat(start_time)
+        if end_time is not None:
+            end_time_dt = datetime.fromisoformat(end_time)
+
         cursor = collection.find({"campaign": campaign_id})
         for doc in cursor:
             if "tracks" not in doc:
                 continue
             for track in doc["tracks"]:
+                # check if track date is in range
+                track_date = get_utc_datetime(datetime.fromisoformat(track["startedAt"]))
+                if track_date < start_time_dt:
+                    continue
+                if end_time is not None and track_date > end_time_dt:
+                    continue
                 s_info = SpecificCampaingTrackInfo(
                     territory_id=territory_id,
                     player_id=doc["playerId"],

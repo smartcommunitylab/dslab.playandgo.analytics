@@ -40,7 +40,7 @@ def get_h3_geo(territory_id, year, mode, target_resolution):
     h3_counts_filtered = h3_counts[h3_counts['distinct_track_count'] >= 15]
     # aggiungo i colori
     # Scegli una colormap, ad esempio 'viridis'
-    cmap = plt.get_cmap('viridis')
+    cmap = plt.get_cmap('plasma')
     # Normalizza i valori tra 0 e 1
     norm = plt.Normalize(h3_counts_filtered['distinct_track_count'].min(), h3_counts_filtered['distinct_track_count'].max())
     # Applica la colormap e converti in esadecimale

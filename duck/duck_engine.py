@@ -19,6 +19,7 @@ class DuckEngine:
         self.search_path = ",".join(str(p) for p in self.search_paths)
 
         self.conn.execute(f"SET file_search_path ='{self.search_path}'")
+        #self.conn.execute("CALL start_ui();")
         self.table_nearest_edges = "nearest_edges"
         self.table_track_info = "track_info"
 

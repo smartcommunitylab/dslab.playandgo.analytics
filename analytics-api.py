@@ -9,14 +9,17 @@ from matplotlib import colors
 
 from shapely.geometry import shape, Polygon
 import geopandas as gpd
+import pandas as pd
 
 from storage.storage_engine import FileStorage
 from psycopg.psyco_engine import PsycoEngine
+from duck.duck_engine import DuckEngine
 
 from flask import Flask, request, render_template
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s - %(name)s: %(message)s')
 logger = logging.getLogger(__name__)
+
 
 def h3_to_geojson(h3_cell):
     """Convert H3 index to GeoJSON Polygon."""
@@ -48,11 +51,47 @@ def get_h3_geo(territory_id, year, mode, target_resolution):
     return h3_gdf.to_json()
 
 
+def get_duck_avg_duration_geo(territory_id:str, campaign_id:str, mode:str, target_resolution:int):
+    query = f"""
+        SELECT nearest_edges.h3, count(*) as tracks, avg(track_info.duration) as avg_duration
+        FROM nearest_edges JOIN track_info
+        ON nearest_edges.track_id=track_info.track_id
+        WHERE track_info.territory_id='{territory_id}' AND track_info.campaign_id='{campaign_id}' AND track_info.mode='{mode}' AND nearest_edges.ordinal=0
+        GROUP BY nearest_edges.h3, track_info.mode
+    """
+    results = duck_engine.execute_query(query)
+    # Crea un DataFrame dai risultati
+    df_h3 = pd.DataFrame(results, columns=['h3', 'tracks', 'avg_duration'])
+    # Raggruppa i valori h3 alla risoluzione target usando il parent H3
+    df_h3['h3_parent'] = df_h3['h3'].apply(lambda x: h3.cell_to_parent(x, target_resolution))
+    # Calcola la somma pesata delle durate (weighted by tracks) e il totale tracks per ogni parent
+    df_h3['duration_weighted'] = df_h3['avg_duration'] * df_h3['tracks']
+    df_agg = df_h3.groupby('h3_parent', as_index=False).agg(
+        tracks=('tracks', 'sum'),
+        duration_weighted_sum=('duration_weighted', 'sum')
+    )
+    # Calcola la durata media pesata per parent
+    df_agg['avg_duration'] = df_agg['duration_weighted_sum'] / df_agg['tracks']
+    df_agg = df_agg.drop(columns=['duration_weighted_sum'])
+    # Toglie le celle H3 che hanno meno di 15 tracce distinte
+    df_agg = df_agg[df_agg['tracks'] >= 15]
+    # Aggiungo i colori
+    cmap = plt.get_cmap('plasma')
+    norm = plt.Normalize(df_agg['avg_duration'].min(), df_agg['avg_duration'].max())
+    df_agg['color'] = df_agg['avg_duration'].apply(lambda x: colors.to_hex(cmap(norm(x))))
+    # Crea un GeoDataFrame con le geometrie H3
+    h3_geoms = df_agg["h3_parent"].apply(lambda x: h3_to_geojson(x))
+    h3_gdf = gpd.GeoDataFrame(data=df_agg, geometry=h3_geoms, crs=4326)
+    return h3_gdf.to_json()
+
 
 app = Flask(__name__)
 server_port = os.getenv("SERVER_PORT", 8078)
 psyco_engine = PsycoEngine()
 psyco_engine.init_tables()
+
+territory_ids = ["Ferrara","L"]
+duck_engine = DuckEngine(territory_ids)
 
 
 @app.route('/api/geo/h3', methods=['GET'])
@@ -88,6 +127,16 @@ def api_get_campaign_geo():
     return gdf.to_json()
 
 
+@app.route('/api/geo/duck/avg-duration', methods=['GET'])
+def api_get_duck_geo():
+    territory_id = request.args.get('territory_id', type=str)
+    campaign_id = request.args.get('campaign_id', type=str)
+    mode = request.args.get('mode', type=str)
+    target_resolution = request.args.get('target_resolution', type=int, default=8)
+    json = get_duck_avg_duration_geo(territory_id, campaign_id, mode, target_resolution)
+    return json
+
+
 @app.route('/')
 def home():
     return render_template('index.html')
@@ -95,6 +144,10 @@ def home():
 @app.route('/campaign')
 def campaign_h3():
     return render_template('campaign_h3.html')
+
+@app.route('/duck')
+def duck_h3():
+    return render_template('duck.html')
 
 if __name__ == "__main__":    
     app.run(host='0.0.0.0', port=server_port)

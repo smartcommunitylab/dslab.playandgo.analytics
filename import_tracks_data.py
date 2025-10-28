@@ -325,11 +325,11 @@ def merge_campaign_tracks_groups(territory_id:str, year:str, campaign_id:str, sa
     file_storage = FileStorage()
     try:
         df = file_storage.merge_df_campaign_tracks_groups_by_campaign(territory_id, year, campaign_id)
-        file_storage.save_df(territory_id, file_storage.mapped_campaign_groups, df, year, save_csv)
+        file_storage.merge_mapped_campaign_groups(territory_id, year, df, save_csv)
         df_info = get_df_info(file_storage, territory_id, file_storage.mapped_campaign_groups, year)
         return df_info
     except FileNotFoundError:
-        logger.error(f"File not found for campaign_subscriptions in territory {territory_id} for year {year}")
+        logger.error(f"File not found for merge_campaign_tracks_groups in territory {territory_id} for year {year}")
 
 
 def import_campaign_tracks_info_data(territory_id:str, start_time, end_time=None, save_csv=False):

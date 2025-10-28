@@ -18,8 +18,9 @@ class FileStorage:
         self.nearest_edges = "nearest_edges"
         self.way_shapes = "way_shapes"
         self.h3_info = "h3_info"
-        self.mapped_edges = "mapped_edges"
         self.mapped_campaign_groups = "mapped_campaign_groups"
+        self.duck_nearest_edges = "duck_nearest_edges"
+        self.duck_tracks_info = "duck_tracks_info"
 
 
     def check_directory(self, territory_id:str):
@@ -171,6 +172,23 @@ class FileStorage:
             if save_csv:
                 self.save_csv(file_path, df)
 
+    def merge_mapped_campaign_groups(self, territory_id:str, year:str, df:pd.DataFrame, save_csv:bool=False):
+        """Merge data to a file."""
+        self.check_directory(territory_id)
+        file_path = self.get_filename(territory_id, self.mapped_campaign_groups, year)
+        if os.path.exists(file_path):
+            existing_df = pd.read_parquet(file_path, engine="pyarrow")
+            combined_df = self.merge_dataframes(existing_df, df, ['territory_id','player_id','track_id', 'campaign_id'])
+            combined_df.to_parquet(file_path, engine="pyarrow") 
+            if save_csv:
+                self.save_csv(file_path, combined_df)
+        else:   
+            df.to_parquet(file_path, engine="pyarrow")                   
+            rows, columns = df.shape
+            logger.info(f"Storage Rows: {rows}, Columns: {columns}")
+            if save_csv:
+                self.save_csv(file_path, df)
+
 
     def merge_df_campaign_tracks_groups_by_campaign(self, territory_id:str, year:str, campaign_id:str):
         """Merge data to a file."""
@@ -180,8 +198,8 @@ class FileStorage:
             logger.info(f"Campaign Tracks Rows: {df_campaign_tracks.shape[0]}")
             s, df_campaign_groups = self.load_dataframe(territory_id, self.campaign_groups)
             logger.info(f"Campaign Groups Rows: {df_campaign_groups.shape[0]}")
-            s, df_campaign_tracks_info = self.load_dataframe(territory_id, self.campaign_tracks_info, year)
-            logger.info(f"Campaign Tracks Info Rows: {df_campaign_tracks_info.shape[0]}")
+            #s, df_campaign_tracks_info = self.load_dataframe(territory_id, self.campaign_tracks_info, year)
+            #logger.info(f"Campaign Tracks Info Rows: {df_campaign_tracks_info.shape[0]}")
             s, df_tracks_info = self.load_dataframe(territory_id, self.tracks_info, year)
             logger.info(f"Tracks Info Rows: {df_tracks_info.shape[0]}")
             # Rimuove le colonne mode e start_time da df_tracks_info
@@ -192,8 +210,8 @@ class FileStorage:
             logger.info(f"Filtered Campaign Tracks Rows: {df_campaign_tracks.shape[0]}")
             df_campaign_groups = df_campaign_groups[df_campaign_groups['campaign_id'] == campaign_id]
             logger.info(f"Filtered Campaign Groups Rows: {df_campaign_groups.shape[0]}")
-            df_campaign_tracks_info = df_campaign_tracks_info[df_campaign_tracks_info['campaign_id'] == campaign_id]
-            logger.info(f"Filtered Campaign Tracks Info Rows: {df_campaign_tracks_info.shape[0]}")
+            #df_campaign_tracks_info = df_campaign_tracks_info[df_campaign_tracks_info['campaign_id'] == campaign_id]
+            #logger.info(f"Filtered Campaign Tracks Info Rows: {df_campaign_tracks_info.shape[0]}")
 
             # Trova i player_id presenti in df_campaign_subscriptions
             #player_ids_subs = df_campaign_subscriptions['player_id'].unique()
@@ -216,12 +234,12 @@ class FileStorage:
                 how='left'
             )
             # Aggiunge way_back e location_id con merge sulle colonne territory_id, track_id, player_id, campaign_id
-            df_merged = pd.merge(
-                df_merged,
-                df_campaign_tracks_info,
-                on=['territory_id', 'track_id', 'player_id', 'campaign_id'],
-                how='left'
-            )
+            #df_merged = pd.merge(
+            #    df_merged,
+            #    df_campaign_tracks_info,
+            #    on=['territory_id', 'track_id', 'player_id', 'campaign_id'],
+            #    how='left'
+            #)
             return df_merged
         except FileNotFoundError:
             raise FileNotFoundError(f"Required files for merging mapped edges not found for territory {territory_id} and year {year}.")

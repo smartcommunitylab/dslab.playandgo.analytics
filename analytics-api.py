@@ -51,7 +51,8 @@ def get_h3_geo(territory_id, year, mode, target_resolution):
     return h3_gdf.to_json()
 
 
-def get_duck_avg_duration_geo(territory_id:str, campaign_id:str, mode:str, target_resolution:int):
+def get_duck_avg_duration_geo(territory_id:str, campaign_id:str, mode:str, target_resolution:int, 
+                              color_by_avg:bool=True, min_tracks:int=5) -> str:
     query = f"""
         SELECT nearest_edges.h3, count(*) as tracks, avg(track_info.duration) as avg_duration
         FROM nearest_edges JOIN track_info
@@ -73,12 +74,17 @@ def get_duck_avg_duration_geo(territory_id:str, campaign_id:str, mode:str, targe
     # Calcola la durata media pesata per parent
     df_agg['avg_duration'] = df_agg['duration_weighted_sum'] / df_agg['tracks']
     df_agg = df_agg.drop(columns=['duration_weighted_sum'])
-    # Toglie le celle H3 che hanno meno di 15 tracce distinte
-    df_agg = df_agg[df_agg['tracks'] >= 15]
+    # Toglie le celle H3 che hanno meno di x tracce distinte
+    df_agg = df_agg[df_agg['tracks'] >= min_tracks]
     # Aggiungo i colori
     cmap = plt.get_cmap('plasma')
-    norm = plt.Normalize(df_agg['avg_duration'].min(), df_agg['avg_duration'].max())
-    df_agg['color'] = df_agg['avg_duration'].apply(lambda x: colors.to_hex(cmap(norm(x))))
+    if color_by_avg:
+        norm = plt.Normalize(df_agg['avg_duration'].min(), df_agg['avg_duration'].max())
+        df_agg['color'] = df_agg['avg_duration'].apply(lambda x: colors.to_hex(cmap(norm(x))))
+    else:
+        norm = plt.Normalize(df_agg['tracks'].min(), df_agg['tracks'].max())
+        df_agg['color'] = df_agg['tracks'].apply(lambda x: colors.to_hex(cmap(norm(x))))
+    
     # Crea un GeoDataFrame con le geometrie H3
     h3_geoms = df_agg["h3_parent"].apply(lambda x: h3_to_geojson(x))
     h3_gdf = gpd.GeoDataFrame(data=df_agg, geometry=h3_geoms, crs=4326)
@@ -133,7 +139,9 @@ def api_get_duck_geo():
     campaign_id = request.args.get('campaign_id', type=str)
     mode = request.args.get('mode', type=str)
     target_resolution = request.args.get('target_resolution', type=int, default=8)
-    json = get_duck_avg_duration_geo(territory_id, campaign_id, mode, target_resolution)
+    color_by_avg = request.args.get('color_by_avg', type=str, default='true').lower() == 'true'
+    min_tracks = request.args.get('min_tracks', type=int, default=5)
+    json = get_duck_avg_duration_geo(territory_id, campaign_id, mode, target_resolution, color_by_avg, min_tracks)
     return json
 
 

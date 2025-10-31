@@ -4,7 +4,7 @@
         "file": "data/osm/ferrara.osm.pbf"
     },
     "L": {
-        "bbox": [8.95, 45.65, 9.65, 46.25], 
+        "bbox": [9.25, 45.75, 9.50, 45.95], 
         "file": "data/osm/lecco.osm.pbf"
     }
 }

@@ -1,4 +1,3 @@
-from typing import List
 import os
 import duckdb
 import pandas as pd
@@ -6,17 +5,15 @@ import h3
 from pathlib import Path
 
 class DuckEngine:
-    def __init__(self, territory_ids:List[str]):
+    def __init__(self, territory_id:str):
+        self.territory_id = territory_id
         self.store_path = os.getenv("STORAGE_PATH", "./files/")
         if self.store_path.endswith("/") or self.store_path.endswith("\\"):
             self.store_path = self.store_path[:-1]
-        self.database_path = Path(f"{self.store_path}/duckdb_database.duckdb").absolute()
+        self.database_path = Path(f"{self.store_path}/{territory_id}/duckdb_database.duckdb").absolute()
         self.conn = duckdb.connect(self.database_path, read_only=True)
 
-        # Crea una lista di Path assoluti per ogni territory_id
-        self.search_paths = [Path(f"{self.store_path}/{tid}").absolute() for tid in territory_ids]
-        # Stringa concatenata separata da virgola come richiesto
-        self.search_path = ",".join(str(p) for p in self.search_paths)
+        self.search_path = Path(f"{self.store_path}/{territory_id}").absolute()
 
         self.conn.execute(f"SET file_search_path ='{self.search_path}'")
         #self.conn.execute("CALL start_ui();")

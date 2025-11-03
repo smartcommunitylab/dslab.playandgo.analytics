@@ -5,13 +5,13 @@ import h3
 from pathlib import Path
 
 class DuckEngine:
-    def __init__(self, territory_id:str):
+    def __init__(self, territory_id:str, read_only:bool=True):
         self.territory_id = territory_id
         self.store_path = os.getenv("STORAGE_PATH", "./files/")
         if self.store_path.endswith("/") or self.store_path.endswith("\\"):
             self.store_path = self.store_path[:-1]
         self.database_path = Path(f"{self.store_path}/{territory_id}/duckdb_database.duckdb").absolute()
-        self.conn = duckdb.connect(self.database_path, read_only=True)
+        self.conn = duckdb.connect(self.database_path, read_only=read_only)
 
         self.search_path = Path(f"{self.store_path}/{territory_id}").absolute()
 
@@ -33,7 +33,7 @@ class DuckEngine:
         self.conn.execute(f"CREATE OR REPLACE TABLE {table_name} AS SELECT * FROM read_parquet('{file_pattern}')")
 
 
-    def convert_nearest_edges(self, territory_id, df_nearest_edges, h3_level:int) -> pd.DataFrame: 
+    def convert_nearest_edges(self, df_nearest_edges, h3_level:int) -> pd.DataFrame: 
         # df_nearest_edges columns=['track_id', 'h3', 'timestamp', 'node_id', 'way_id', 'ordinal']
         # Crea una nuova colonna con l'H3 parent
         df_nearest_edges['h3_parent'] = df_nearest_edges['h3'].apply(lambda x: h3.cell_to_parent(x, h3_level))
@@ -49,14 +49,14 @@ class DuckEngine:
                 index = 0
             if h3_id != last_h3_id:
                 last_h3_id = h3_id
-                edges.append((territory_id, track_id, h3_id, timestamp, index))
+                edges.append((track_id, h3_id, timestamp, index))
                 index += 1
         
-        df_duck_nearest_edges = pd.DataFrame(edges, columns=['territory_id', 'track_id', 'h3', 'timestamp', 'ordinal'])
+        df_duck_nearest_edges = pd.DataFrame(edges, columns=['track_id', 'h3', 'timestamp', 'ordinal'])
         return df_duck_nearest_edges
     
 
-    def convert_campaign_track_group_info(self, territory_id, df_tracks_info) -> pd.DataFrame:
+    def convert_campaign_track_group_info(self, df_tracks_info) -> pd.DataFrame:
         tracks = []
         for row in df_tracks_info.itertuples():
             track_id = row.track_id
@@ -70,9 +70,9 @@ class DuckEngine:
             distance = row.distance
             group_id = row.group_id
             multimodal_id = row.multimodal_id
-            tracks.append((territory_id, campaign_id, campaign_type, player_id, group_id, track_id, multimodal_id, mode, start_time, end_time, duration, distance))
+            tracks.append((campaign_id, campaign_type, player_id, group_id, track_id, multimodal_id, mode, start_time, end_time, duration, distance))
 
-        df_duck_tracks_info = pd.DataFrame(tracks, columns=['territory_id', 'campaign_id', 'campaign_type', 'player_id', 'group_id', 'track_id', 'multimodal_id', 'mode', 'start_time', 'end_time', 'duration', 'distance'])
+        df_duck_tracks_info = pd.DataFrame(tracks, columns=['campaign_id', 'campaign_type', 'player_id', 'group_id', 'track_id', 'multimodal_id', 'mode', 'start_time', 'end_time', 'duration', 'distance'])
         return df_duck_tracks_info
 
 

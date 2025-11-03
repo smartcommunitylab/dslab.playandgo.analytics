@@ -57,9 +57,10 @@ def get_duck_avg_duration_geo(territory_id:str, campaign_id:str, mode:str, targe
         SELECT nearest_edges.h3, count(*) as tracks, avg(track_info.duration) as avg_duration
         FROM nearest_edges JOIN track_info
         ON nearest_edges.track_id=track_info.track_id
-        WHERE track_info.territory_id='{territory_id}' AND track_info.campaign_id='{campaign_id}' AND track_info.mode='{mode}' AND nearest_edges.ordinal=0
+        WHERE track_info.campaign_id='{campaign_id}' AND track_info.mode='{mode}' AND nearest_edges.ordinal=0
         GROUP BY nearest_edges.h3, track_info.mode
     """
+    duck_engine = duckengine_map[territory_id]
     results = duck_engine.execute_query(query)
     # Crea un DataFrame dai risultati
     df_h3 = pd.DataFrame(results, columns=['h3', 'tracks', 'avg_duration'])
@@ -91,13 +92,49 @@ def get_duck_avg_duration_geo(territory_id:str, campaign_id:str, mode:str, targe
     return h3_gdf.to_json()
 
 
+def get_duck_trips_geo(territory_id:str, campaign_id:str, mode:str, target_resolution:int, min_tracks:int=5) -> str:
+    query = f"""
+        SELECT h3, count(*) AS tracks
+        FROM (SELECT nearest_edges.track_id, nearest_edges.h3 
+        FROM nearest_edges JOIN track_info
+        ON nearest_edges.track_id=track_info.track_id
+        WHERE track_info.campaign_id='{campaign_id}' AND track_info.mode='{mode}'
+        GROUP BY nearest_edges.track_id, nearest_edges.h3)
+        group by h3
+    """
+    duck_engine = duckengine_map[territory_id]
+    results = duck_engine.execute_query(query)
+    # Crea un DataFrame dai risultati
+    df_h3 = pd.DataFrame(results, columns=['h3', 'tracks'])
+    # Raggruppa i valori h3 alla risoluzione target usando il parent H3
+    df_h3['h3_parent'] = df_h3['h3'].apply(lambda x: h3.cell_to_parent(x, target_resolution))
+    # Calcola la somma delle tracce per ogni parent
+    df_agg = df_h3.groupby('h3_parent', as_index=False).agg(
+        tracks=('tracks', 'sum')
+    )
+    # Toglie le celle H3 che hanno meno di x tracce distinte
+    df_agg = df_agg[df_agg['tracks'] >= min_tracks]
+    # Aggiungo i colori
+    cmap = plt.get_cmap('plasma')
+    norm = plt.Normalize(df_agg['tracks'].min(), df_agg['tracks'].max())
+    df_agg['color'] = df_agg['tracks'].apply(lambda x: colors.to_hex(cmap(norm(x))))
+    
+    # Crea un GeoDataFrame con le geometrie H3
+    h3_geoms = df_agg["h3_parent"].apply(lambda x: h3_to_geojson(x))
+    h3_gdf = gpd.GeoDataFrame(data=df_agg, geometry=h3_geoms, crs=4326)
+    return h3_gdf.to_json()
+
+
 app = Flask(__name__)
 server_port = os.getenv("SERVER_PORT", 8078)
 psyco_engine = PsycoEngine()
 psyco_engine.init_tables()
 
-territory_ids = ["Ferrara","L"]
-duck_engine = DuckEngine(territory_ids)
+territory_ids = ["L"]
+duckengine_map = {}
+for territory_id in territory_ids:
+    duck_engine = DuckEngine(territory_id, True)
+    duckengine_map[territory_id] = duck_engine
 
 
 @app.route('/api/geo/h3', methods=['GET'])
@@ -134,7 +171,7 @@ def api_get_campaign_geo():
 
 
 @app.route('/api/geo/duck/avg-duration', methods=['GET'])
-def api_get_duck_geo():
+def api_get_duck_duration_geo():
     territory_id = request.args.get('territory_id', type=str)
     campaign_id = request.args.get('campaign_id', type=str)
     mode = request.args.get('mode', type=str)
@@ -142,6 +179,17 @@ def api_get_duck_geo():
     color_by_avg = request.args.get('color_by_avg', type=str, default='true').lower() == 'true'
     min_tracks = request.args.get('min_tracks', type=int, default=5)
     json = get_duck_avg_duration_geo(territory_id, campaign_id, mode, target_resolution, color_by_avg, min_tracks)
+    return json
+
+
+@app.route('/api/geo/duck/trips', methods=['GET'])
+def api_get_duck_trips_geo():
+    territory_id = request.args.get('territory_id', type=str)
+    campaign_id = request.args.get('campaign_id', type=str)
+    mode = request.args.get('mode', type=str)
+    target_resolution = request.args.get('target_resolution', type=int, default=8)
+    min_tracks = request.args.get('min_tracks', type=int, default=5)
+    json = get_duck_trips_geo(territory_id, campaign_id, mode, target_resolution, min_tracks)
     return json
 
 
@@ -153,9 +201,13 @@ def home():
 def campaign_h3():
     return render_template('campaign_h3.html')
 
-@app.route('/duck')
-def duck_h3():
-    return render_template('duck.html')
+@app.route('/duck/duration')
+def duck_avg_duration_h3():
+    return render_template('duck_duration.html')
+
+@app.route('/duck/trips')
+def duck_trips_h3():
+    return render_template('duck_trips.html')
 
 if __name__ == "__main__":    
     app.run(host='0.0.0.0', port=server_port)

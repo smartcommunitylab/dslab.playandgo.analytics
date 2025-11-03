@@ -37,11 +37,11 @@
     </style>
 </head>
 <body>
-    <h2>Mappa della durata media dei viaggi con partenza da cella H3</h2>
+    <h2>Mappa dei passaggi su cella H3</h2>
     <div class="controls">
         <label>Territorio: <input type="text" id="territory_id" value="L"></label>
-        <label>Campagna: <input type="text" id="campaign_id" value="67aa0a0b2ce13b53dcb8bf1f"></label>
-        <label>Risoluzione: <input type="number" id="target_resolution" value="10" min="5" max="10"></label>
+        <label>Campagna: <input type="text" id="campaign_id" value="L.personal"></label>
+        <label>Risoluzione: <input type="number" id="target_resolution" value="9" min="5" max="9"></label>
         <label>Modalità:
             <select id="mode">
                 <option value="walk">Walk</option>
@@ -62,14 +62,6 @@
             </svg>
             Load
         </button>
-        <!-- Select per la colorazione -->
-        <label style="margin-left:6px;">
-            <select id="color_by_avg">
-                <option value="true" selected>Durata media</option>
-                <option value="false">Numero di tracce</option>
-            </select>
-            Colorazioni
-        </label>
     </div>
 
     <!-- Loader -->
@@ -108,10 +100,9 @@
             var campaign_id = document.getElementById('campaign_id').value;
             var target_resolution = document.getElementById('target_resolution').value;
             var mode = document.getElementById('mode').value;
-            var color_by_avg = document.getElementById('color_by_avg').value === 'true';
             var min_tracks = document.getElementById('min_tracks').value;
 
-            var url = `/api/geo/duck/avg-duration?territory_id=${encodeURIComponent(territory_id)}&campaign_id=${encodeURIComponent(campaign_id)}&target_resolution=${encodeURIComponent(target_resolution)}&mode=${encodeURIComponent(mode)}&min_tracks=${encodeURIComponent(min_tracks)}&color_by_avg=${encodeURIComponent(color_by_avg)}`;
+            var url = `/api/geo/duck/trips?territory_id=${encodeURIComponent(territory_id)}&campaign_id=${encodeURIComponent(campaign_id)}&target_resolution=${encodeURIComponent(target_resolution)}&mode=${encodeURIComponent(mode)}&min_tracks=${encodeURIComponent(min_tracks)}`;
 
             setLoadingState(true);
             fetch(url)

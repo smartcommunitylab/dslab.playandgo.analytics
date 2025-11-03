@@ -190,16 +190,19 @@ class FileStorage:
                 self.save_csv(file_path, df)
 
 
-    def merge_df_campaign_tracks_groups_by_campaign(self, territory_id:str, year:str, campaign_id:str):
+    def merge_df_campaign_tracks_groups_by_campaign(self, territory_id:str, year:str, campaign_id:str, 
+                                                    set_group_id:bool=False, set_campaign_info:bool=False) -> pd.DataFrame:
         """Merge data to a file."""
         self.check_directory(territory_id)
         try:
             s, df_campaign_tracks = self.load_dataframe(territory_id, self.campaign_tracks, year)
             logger.info(f"Campaign Tracks Rows: {df_campaign_tracks.shape[0]}")
-            s, df_campaign_groups = self.load_dataframe(territory_id, self.campaign_groups)
-            logger.info(f"Campaign Groups Rows: {df_campaign_groups.shape[0]}")
-            #s, df_campaign_tracks_info = self.load_dataframe(territory_id, self.campaign_tracks_info, year)
-            #logger.info(f"Campaign Tracks Info Rows: {df_campaign_tracks_info.shape[0]}")
+            if(set_group_id):
+                s, df_campaign_groups = self.load_dataframe(territory_id, self.campaign_groups)
+                logger.info(f"Campaign Groups Rows: {df_campaign_groups.shape[0]}")
+            if(set_campaign_info):
+                s, df_campaign_tracks_info = self.load_dataframe(territory_id, self.campaign_tracks_info, year)
+                logger.info(f"Campaign Tracks Info Rows: {df_campaign_tracks_info.shape[0]}")
             s, df_tracks_info = self.load_dataframe(territory_id, self.tracks_info, year)
             logger.info(f"Tracks Info Rows: {df_tracks_info.shape[0]}")
             # Rimuove le colonne mode e start_time da df_tracks_info
@@ -208,10 +211,12 @@ class FileStorage:
             # Filtra per campaign_id
             df_campaign_tracks = df_campaign_tracks[df_campaign_tracks['campaign_id'] == campaign_id]
             logger.info(f"Filtered Campaign Tracks Rows: {df_campaign_tracks.shape[0]}")
-            df_campaign_groups = df_campaign_groups[df_campaign_groups['campaign_id'] == campaign_id]
-            logger.info(f"Filtered Campaign Groups Rows: {df_campaign_groups.shape[0]}")
-            #df_campaign_tracks_info = df_campaign_tracks_info[df_campaign_tracks_info['campaign_id'] == campaign_id]
-            #logger.info(f"Filtered Campaign Tracks Info Rows: {df_campaign_tracks_info.shape[0]}")
+            if(set_group_id):
+                df_campaign_groups = df_campaign_groups[df_campaign_groups['campaign_id'] == campaign_id]
+                logger.info(f"Filtered Campaign Groups Rows: {df_campaign_groups.shape[0]}")
+            if(set_campaign_info):
+                df_campaign_tracks_info = df_campaign_tracks_info[df_campaign_tracks_info['campaign_id'] == campaign_id]
+                logger.info(f"Filtered Campaign Tracks Info Rows: {df_campaign_tracks_info.shape[0]}")
 
             # Trova i player_id presenti in df_campaign_subscriptions
             #player_ids_subs = df_campaign_subscriptions['player_id'].unique()
@@ -219,27 +224,34 @@ class FileStorage:
             #tracks_not_in_subs = df_campaign_tracks[~df_campaign_tracks['player_id'].isin(player_ids_subs)]
             #logger.info(tracks_not_in_subs)
 
-            # Aggiunge group_id con merge sulle colonne territory_id, player_id, campaign_id
-            df_merged = pd.merge(
-                df_campaign_tracks,
-                df_campaign_groups,
-                on=['territory_id', 'player_id', 'campaign_id'],
-                how='left'
-            )  
             # Aggiunge multimodal_id con merge sulle colonne player_id e track_id
             df_merged = pd.merge(
-                df_merged,
+                df_campaign_tracks,
                 df_tracks_info,
                 on=['player_id', 'track_id'],
                 how='left'
             )
+            # Aggiunge group_id con merge sulle colonne territory_id, player_id, campaign_id
+            if(set_group_id):
+                df_merged = pd.merge(
+                    df_merged,
+                    df_campaign_groups,
+                    on=['territory_id', 'player_id', 'campaign_id'],
+                    how='left'
+                )
+            else:
+                df_merged['group_id'] = "-1"  
             # Aggiunge way_back e location_id con merge sulle colonne territory_id, track_id, player_id, campaign_id
-            #df_merged = pd.merge(
-            #    df_merged,
-            #    df_campaign_tracks_info,
-            #    on=['territory_id', 'track_id', 'player_id', 'campaign_id'],
-            #    how='left'
-            #)
+            if(set_campaign_info):
+                df_merged = pd.merge(
+                    df_merged,
+                    df_campaign_tracks_info,
+                    on=['territory_id', 'track_id', 'player_id', 'campaign_id'],
+                    how='left'
+                )
+            else:
+                df_merged['way_back'] = False
+                df_merged['location_id'] = "-1"
             return df_merged
         except FileNotFoundError:
             raise FileNotFoundError(f"Required files for merging mapped edges not found for territory {territory_id} and year {year}.")

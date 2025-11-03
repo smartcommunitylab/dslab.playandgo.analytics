@@ -321,10 +321,11 @@ def get_df_info_list(territory_id:str, year:str):
     return info_list
 
 
-def merge_campaign_tracks_groups(territory_id:str, year:str, campaign_id:str, save_csv=False):
+def merge_campaign_tracks_groups(territory_id:str, year:str, campaign_id:str, 
+                                 set_group_id:bool=False, set_campaign_info:bool=False, save_csv=False):
     file_storage = FileStorage()
     try:
-        df = file_storage.merge_df_campaign_tracks_groups_by_campaign(territory_id, year, campaign_id)
+        df = file_storage.merge_df_campaign_tracks_groups_by_campaign(territory_id, year, campaign_id, set_group_id, set_campaign_info)
         file_storage.merge_mapped_campaign_groups(territory_id, year, df, save_csv)
         df_info = get_df_info(file_storage, territory_id, file_storage.mapped_campaign_groups, year)
         return df_info

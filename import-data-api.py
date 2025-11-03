@@ -81,8 +81,10 @@ def api_merge_campaign_tracks_group():
     territory_id = request.args.get('territory_id', type=str)
     year = request.args.get('year', type=str)
     campaign_id = request.args.get('campaign_id', type=str)
+    set_group_id = request.args.get('set_group_id', default=False, type=bool)
+    set_campaign_info = request.args.get('set_campaign_info', default=False, type=bool)
     save_csv = request.args.get('save_csv', default=False, type=bool)
-    info_map = merge_campaign_tracks_groups(territory_id, year, campaign_id, save_csv)
+    info_map = merge_campaign_tracks_groups(territory_id, year, campaign_id, set_group_id, set_campaign_info, save_csv)
     stop = datetime.now()
     print(f"api_merge_campaign_tracks_groups Territory ID: {territory_id}, Time:{(stop - start).total_seconds()} seconds")
     return info_map

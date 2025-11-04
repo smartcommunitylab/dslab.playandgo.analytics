@@ -83,14 +83,14 @@ def extract_track_data_osm(territory_id, track, ls_tracks, ls_tracks_info, df_wa
                 cell = h3.latlng_to_cell(trace_info.lat, trace_info.lon, h3_res)
                 #df_nearest_edges = ['track_id', 'h3', 'timestamp', 'node_id', 'way_id', 'ordinal']
                 nearest_edge = {'track_id': track_id, 'h3': str(cell), 'timestamp': trace_info.timestamp, 
-                                'node_id': node_id, 'way_id': trace_info.way_id, 'ordinal': index}
+                                'node_id': str(node_id), 'way_id': str(trace_info.way_id), 'ordinal': index}
                 ls_nearest_edges.append(nearest_edge)
         else:
             for index, trace_info in enumerate(trace_route.trace_infos):
                 cell = h3.latlng_to_cell(trace_info.lat, trace_info.lon, h3_res)
                 #df_nearest_edges = ['track_id', 'h3', 'timestamp', 'node_id', 'way_id', 'ordinal']
                 nearest_edge = {'track_id': track_id, 'h3': str(cell), 'timestamp': trace_info.timestamp, 
-                                'node_id': None, 'way_id': trace_info.way_id, 'ordinal': index}
+                                'node_id': "-1", 'way_id': str(trace_info.way_id), 'ordinal': index}
                 ls_nearest_edges.append(nearest_edge)
 
     stop = datetime.now()
@@ -113,7 +113,7 @@ def extract_track_data_h3(track, ls_tracks_info, ls_nearest_edges):
         cell = h3.latlng_to_cell(point['latitude'], point['longitude'], h3_res)
         #df_nearest_edges = ['track_id', 'h3', 'timestamp', 'node_id', 'way_id', 'ordinal']
         nearest_edge = {'track_id': track_id, 'h3': str(cell), 'timestamp': point['time'], 
-                        'node_id': None, 'way_id': None, 'ordinal': index}
+                        'node_id': "-1", 'way_id': "-1", 'ordinal': index}
         ls_nearest_edges.append(nearest_edge)
 
     stop = datetime.now()
@@ -161,6 +161,7 @@ def import_nearest_edges_by_trace(territory_id, start_time, track_modes, end_tim
                     logger.info(f"Track {track_mode} {count} processed.")
                 except Exception as e:
                     logger.warning(f"Error processing track {track_mode} {count}: {e}")
+                    extract_track_data_h3(track, ls_tracks_info, ls_nearest_edges)
                 count += 1
 
         else:

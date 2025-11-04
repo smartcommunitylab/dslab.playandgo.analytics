@@ -3,10 +3,23 @@ import duckdb
 import pandas as pd
 import h3
 from pathlib import Path
+from enum import Enum
+from datetime import datetime
+from datetime import timezone
+from zoneinfo import ZoneInfo
+
+class TimeSlot(Enum):
+    S_05_10 = "05-10"
+    S_10_15 = "10-15"
+    S_15_20 = "15-20"
+    S_20_05 = "20-05"
+
 
 class DuckEngine:
-    def __init__(self, territory_id:str, read_only:bool=True):
+    
+    def __init__(self, territory_id:str, read_only:bool=True, tz:str="Europe/Rome"):
         self.territory_id = territory_id
+        self.tz = tz
         self.store_path = os.getenv("STORAGE_PATH", "./files/")
         if self.store_path.endswith("/") or self.store_path.endswith("\\"):
             self.store_path = self.store_path[:-1]
@@ -56,6 +69,19 @@ class DuckEngine:
         return df_duck_nearest_edges
     
 
+
+    def get_time_slot(self, start_time:datetime) -> TimeSlot:
+        dt = start_time.astimezone(ZoneInfo(self.tz))
+        slot = dt.strftime("%H:%M")
+        if slot >= "05:00" and slot <= "09:59":
+            return TimeSlot.S_05_10
+        if slot >= "10:00" and slot <= "14:59":
+            return TimeSlot.S_10_15
+        if slot >= "15:00" and slot <= "19:59":
+            return TimeSlot.S_15_20
+        return TimeSlot.S_20_05
+
+
     def convert_campaign_track_group_info(self, df_tracks_info) -> pd.DataFrame:
         tracks = []
         for row in df_tracks_info.itertuples():
@@ -70,9 +96,12 @@ class DuckEngine:
             distance = row.distance
             group_id = row.group_id
             multimodal_id = row.multimodal_id
-            tracks.append((campaign_id, campaign_type, player_id, group_id, track_id, multimodal_id, mode, start_time, end_time, duration, distance))
+            time_slot = self.get_time_slot(start_time)
+            tracks.append((campaign_id, campaign_type, player_id, group_id, track_id, multimodal_id, mode, start_time, end_time, 
+                           duration, distance, time_slot.value))
 
-        df_duck_tracks_info = pd.DataFrame(tracks, columns=['campaign_id', 'campaign_type', 'player_id', 'group_id', 'track_id', 'multimodal_id', 'mode', 'start_time', 'end_time', 'duration', 'distance'])
+        df_duck_tracks_info = pd.DataFrame(tracks, columns=['campaign_id', 'campaign_type', 'player_id', 'group_id', 'track_id', 
+                                                            'multimodal_id', 'mode', 'start_time', 'end_time', 'duration', 'distance', 'time_slot'])
         return df_duck_tracks_info
 
 

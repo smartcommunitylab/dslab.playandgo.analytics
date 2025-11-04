@@ -51,15 +51,19 @@ def get_h3_geo(territory_id, year, mode, target_resolution):
     return h3_gdf.to_json()
 
 
-def get_duck_avg_duration_geo(territory_id:str, campaign_id:str, mode:str, target_resolution:int, 
-                              color_by_avg:bool=True, min_tracks:int=5) -> str:
+def get_duck_avg_duration_geo(territory_id:str, campaign_id:str, mode:str, time_slot:str,
+                              target_resolution:int, color_by_avg:bool=True, min_tracks:int=5) -> str:
     query = f"""
         SELECT nearest_edges.h3, count(*) as tracks, avg(track_info.duration) as avg_duration
         FROM nearest_edges JOIN track_info
         ON nearest_edges.track_id=track_info.track_id
-        WHERE track_info.campaign_id='{campaign_id}' AND track_info.mode='{mode}' AND nearest_edges.ordinal=0
-        GROUP BY nearest_edges.h3, track_info.mode
-    """
+        WHERE track_info.campaign_id='{campaign_id}' AND nearest_edges.ordinal=0""" 
+    if mode is not None:    
+        query = query + f" AND track_info.mode='{mode}'"
+    if time_slot is not None:
+        query = query + f" AND track_info.time_slot='{time_slot}'"
+    query = query + f" GROUP BY nearest_edges.h3"
+        
     duck_engine = duckengine_map[territory_id]
     results = duck_engine.execute_query(query)
     # Crea un DataFrame dai risultati
@@ -92,16 +96,20 @@ def get_duck_avg_duration_geo(territory_id:str, campaign_id:str, mode:str, targe
     return h3_gdf.to_json()
 
 
-def get_duck_trips_geo(territory_id:str, campaign_id:str, mode:str, target_resolution:int, min_tracks:int=5) -> str:
+def get_duck_trips_geo(territory_id:str, campaign_id:str, mode:str, time_slot:str, 
+                       target_resolution:int, min_tracks:int=5) -> str:
     query = f"""
         SELECT h3, count(*) AS tracks
         FROM (SELECT nearest_edges.track_id, nearest_edges.h3 
         FROM nearest_edges JOIN track_info
         ON nearest_edges.track_id=track_info.track_id
-        WHERE track_info.campaign_id='{campaign_id}' AND track_info.mode='{mode}'
-        GROUP BY nearest_edges.track_id, nearest_edges.h3)
-        group by h3
-    """
+        WHERE track_info.campaign_id='{campaign_id}'""" 
+    if mode is not None:    
+        query = query + f" AND track_info.mode='{mode}'"
+    if time_slot is not None:
+        query = query + f" AND track_info.time_slot='{time_slot}'"
+    query = query + f" GROUP BY nearest_edges.track_id, nearest_edges.h3) GROUP By h3"
+    
     duck_engine = duckengine_map[territory_id]
     results = duck_engine.execute_query(query)
     # Crea un DataFrame dai risultati
@@ -174,11 +182,12 @@ def api_get_campaign_geo():
 def api_get_duck_duration_geo():
     territory_id = request.args.get('territory_id', type=str)
     campaign_id = request.args.get('campaign_id', type=str)
-    mode = request.args.get('mode', type=str)
+    mode = request.args.get('mode', type=str, default=None)
+    time_slot = request.args.get('time_slot', type=str, default=None)
     target_resolution = request.args.get('target_resolution', type=int, default=8)
     color_by_avg = request.args.get('color_by_avg', type=str, default='true').lower() == 'true'
     min_tracks = request.args.get('min_tracks', type=int, default=5)
-    json = get_duck_avg_duration_geo(territory_id, campaign_id, mode, target_resolution, color_by_avg, min_tracks)
+    json = get_duck_avg_duration_geo(territory_id, campaign_id, mode, time_slot, target_resolution, color_by_avg, min_tracks)
     return json
 
 
@@ -186,10 +195,11 @@ def api_get_duck_duration_geo():
 def api_get_duck_trips_geo():
     territory_id = request.args.get('territory_id', type=str)
     campaign_id = request.args.get('campaign_id', type=str)
-    mode = request.args.get('mode', type=str)
+    mode = request.args.get('mode', type=str, default=None)
+    time_slot = request.args.get('time_slot', type=str, default=None)
     target_resolution = request.args.get('target_resolution', type=int, default=8)
     min_tracks = request.args.get('min_tracks', type=int, default=5)
-    json = get_duck_trips_geo(territory_id, campaign_id, mode, target_resolution, min_tracks)
+    json = get_duck_trips_geo(territory_id, campaign_id, mode, time_slot, target_resolution, min_tracks)
     return json
 
 

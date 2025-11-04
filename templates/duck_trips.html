@@ -44,10 +44,20 @@
         <label>Risoluzione: <input type="number" id="target_resolution" value="9" min="5" max="9"></label>
         <label>Modalità:
             <select id="mode">
+                <option value="">All</option>
                 <option value="walk">Walk</option>
                 <option value="bike">Bike</option>
                 <option value="bus">Bus</option>
                 <option value="train">Train</option>
+            </select>
+        </label>
+        <label>Fascia oraria:
+            <select id="time_slot">
+                <option value="">Tutti</option>
+                <option value="05-10">05:00 - 09:59</option>
+                <option value="10-15">10:00 - 14:59</option>
+                <option value="15-20">15:00 - 19:59</option>
+                <option value="20-05">20:00 - 04:59</option>
             </select>
         </label>
         <label>Tracce minime:
@@ -100,9 +110,25 @@
             var campaign_id = document.getElementById('campaign_id').value;
             var target_resolution = document.getElementById('target_resolution').value;
             var mode = document.getElementById('mode').value;
+            var time_slot = document.getElementById('time_slot').value;
             var min_tracks = document.getElementById('min_tracks').value;
 
-            var url = `/api/geo/duck/trips?territory_id=${encodeURIComponent(territory_id)}&campaign_id=${encodeURIComponent(campaign_id)}&target_resolution=${encodeURIComponent(target_resolution)}&mode=${encodeURIComponent(mode)}&min_tracks=${encodeURIComponent(min_tracks)}`;
+            // Base URL con param obbligatori
+            var params = [];
+            params.push("territory_id=" + encodeURIComponent(territory_id));
+            params.push("campaign_id=" + encodeURIComponent(campaign_id));
+            params.push("target_resolution=" + encodeURIComponent(target_resolution));
+            params.push("min_tracks=" + encodeURIComponent(min_tracks));
+
+            // Aggiungi mode e time_slot solo se non stringhe vuote
+            if (mode && mode !== "") {
+                params.push("mode=" + encodeURIComponent(mode));
+            }
+            if (time_slot && time_slot !== "") {
+                params.push("time_slot=" + encodeURIComponent(time_slot));
+            }
+            
+            var url = "/api/geo/duck/trips?" + params.join("&");
 
             setLoadingState(true);
             fetch(url)

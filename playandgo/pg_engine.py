@@ -234,16 +234,41 @@ class PlayAndGoEngine:
         campaign_collection = db["campaigns"]
         campaign_cursor = campaign_collection.find({"territoryId":territory_id})
         for campaign in campaign_cursor:
-            if campaign["type"] != "company" and campaign["type"] != "school":
-                continue
             if campaign["type"] == "company":
                 for c_group in self.get_company_group_info(territory_id, str(campaign["_id"])):
                     yield c_group    
             elif campaign["type"] == "school":
                 for c_group in self.get_hsc_group_info(territory_id, str(campaign["_id"])):
                     yield c_group
+            elif (campaign["type"] == "personal") or (campaign["type"] == "city"):
+                for c_group in self.get_basic_campaign_info(territory_id, str(campaign["_id"])):
+                    yield c_group
         campaign_cursor.close()
 
+        client.close()
+
+
+    def get_basic_campaign_info(self, territory_id: str, campaign_id: str):
+        # Connessione al server MongoDB (modifica la stringa di connessione se necessario)
+        client = MongoClient(self.mongo_uri, directConnection=self.direct_connection)
+
+        # Seleziona il database
+        db = client[self.mongo_db]
+
+        # Seleziona la collection
+        collection = db["campaignSubscriptions"]
+
+        # Ottieni il documento specifico per campaign_id
+        sub_cursor = collection.find({"territoryId": territory_id, "campaignSubscriptions": campaign_id})
+        for sub in sub_cursor:
+            c_group = CampaignGroup(
+                territory_id=territory_id,
+                player_id=sub["playerId"],
+                campaign_id=campaign_id,
+                group_id="-1"  # no group id for personal and city campaigns
+            )
+            yield c_group
+        sub_cursor.close()
         client.close()
 
 

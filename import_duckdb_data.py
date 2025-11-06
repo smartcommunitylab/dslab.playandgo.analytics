@@ -7,10 +7,10 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s - %(na
 logger = logging.getLogger(__name__)
 
 h3_level = 9
-years = ["2023","2024","2025"]
+years = ["2022","2023", "2025"]
 
 if __name__ == "__main__": 
-    territory_ids = ["L"]
+    territory_ids = ["Ferrara"]
     # create a map with <territory_id, DuckEngine>
     engine_map = {}
     for territory_id in territory_ids:

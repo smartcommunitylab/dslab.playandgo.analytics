@@ -138,7 +138,7 @@ server_port = os.getenv("SERVER_PORT", 8078)
 psyco_engine = PsycoEngine()
 psyco_engine.init_tables()
 
-territory_ids = ["L"]
+territory_ids = ["L", "Ferrara"]
 duckengine_map = {}
 for territory_id in territory_ids:
     duck_engine = DuckEngine(territory_id, True)

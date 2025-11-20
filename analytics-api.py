@@ -51,7 +51,7 @@ def get_h3_geo(territory_id, year, mode, target_resolution):
     return h3_gdf.to_json()
 
 
-def get_duck_avg_duration_geo(territory_id:str, campaign_id:str, mode:str, time_slot:str,
+def get_duck_avg_duration_geo(territory_id:str, campaign_id:str, mode:str, time_slot:str, group_id:str,
                               target_resolution:int, color_by_avg:bool=True, min_tracks:int=5) -> str:
     query = f"""
         SELECT nearest_edges.h3, count(*) as tracks, avg(track_info.duration) as avg_duration
@@ -62,6 +62,8 @@ def get_duck_avg_duration_geo(territory_id:str, campaign_id:str, mode:str, time_
         query = query + f" AND track_info.mode='{mode}'"
     if time_slot is not None:
         query = query + f" AND track_info.time_slot='{time_slot}'"
+    if group_id is not None:
+        query = query + f" AND track_info.group_id='{group_id}'"        
     query = query + f" GROUP BY nearest_edges.h3"
         
     duck_engine = duckengine_map[territory_id]
@@ -96,7 +98,7 @@ def get_duck_avg_duration_geo(territory_id:str, campaign_id:str, mode:str, time_
     return h3_gdf.to_json()
 
 
-def get_duck_trips_geo(territory_id:str, campaign_id:str, mode:str, time_slot:str, 
+def get_duck_trips_geo(territory_id:str, campaign_id:str, mode:str, time_slot:str, group_id:str, 
                        target_resolution:int, min_tracks:int=5) -> str:
     query = f"""
         SELECT h3, count(*) AS tracks
@@ -108,6 +110,8 @@ def get_duck_trips_geo(territory_id:str, campaign_id:str, mode:str, time_slot:st
         query = query + f" AND track_info.mode='{mode}'"
     if time_slot is not None:
         query = query + f" AND track_info.time_slot='{time_slot}'"
+    if group_id is not None:
+        query = query + f" AND track_info.group_id='{group_id}'"
     query = query + f" GROUP BY nearest_edges.track_id, nearest_edges.h3) GROUP By h3"
     
     duck_engine = duckengine_map[territory_id]
@@ -136,7 +140,7 @@ def get_duck_trips_geo(territory_id:str, campaign_id:str, mode:str, time_slot:st
 app = Flask(__name__)
 server_port = os.getenv("SERVER_PORT", 8078)
 psyco_engine = PsycoEngine()
-psyco_engine.init_tables()
+#psyco_engine.init_tables()
 
 territory_ids = ["L", "Ferrara"]
 duckengine_map = {}
@@ -184,10 +188,11 @@ def api_get_duck_duration_geo():
     campaign_id = request.args.get('campaign_id', type=str)
     mode = request.args.get('mode', type=str, default=None)
     time_slot = request.args.get('time_slot', type=str, default=None)
+    group_id = request.args.get('group_id', type=str, default=None)
     target_resolution = request.args.get('target_resolution', type=int, default=8)
     color_by_avg = request.args.get('color_by_avg', type=str, default='true').lower() == 'true'
     min_tracks = request.args.get('min_tracks', type=int, default=5)
-    json = get_duck_avg_duration_geo(territory_id, campaign_id, mode, time_slot, target_resolution, color_by_avg, min_tracks)
+    json = get_duck_avg_duration_geo(territory_id, campaign_id, mode, time_slot, group_id, target_resolution, color_by_avg, min_tracks)
     return json
 
 
@@ -197,9 +202,10 @@ def api_get_duck_trips_geo():
     campaign_id = request.args.get('campaign_id', type=str)
     mode = request.args.get('mode', type=str, default=None)
     time_slot = request.args.get('time_slot', type=str, default=None)
+    group_id = request.args.get('group_id', type=str, default=None)
     target_resolution = request.args.get('target_resolution', type=int, default=8)
     min_tracks = request.args.get('min_tracks', type=int, default=5)
-    json = get_duck_trips_geo(territory_id, campaign_id, mode, time_slot, target_resolution, min_tracks)
+    json = get_duck_trips_geo(territory_id, campaign_id, mode, time_slot, group_id, target_resolution, min_tracks)
     return json
 
 

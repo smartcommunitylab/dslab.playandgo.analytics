@@ -82,8 +82,22 @@ class DuckEngine:
         return TimeSlot.S_20_05
 
 
-    def convert_campaign_track_group_info(self, df_tracks_info) -> pd.DataFrame:
+    def convert_campaign_track_group_info(self, df_tracks_info:pd.DataFrame, df_duck_nearest_edges:pd.DataFrame) -> pd.DataFrame:
         tracks = []
+
+        # Precalcola h3 di inizio (ordinal=0) e h3 di fine (ultimo ordinal) per ciascun track_id
+        if df_duck_nearest_edges is not None and not df_duck_nearest_edges.empty:
+            df_edges_sorted = df_duck_nearest_edges.sort_values(['track_id', 'ordinal'])
+            h3_bounds = df_edges_sorted.groupby('track_id', as_index=False).agg(
+                h3_start=('h3', 'first'),
+                h3_end=('h3', 'last')
+            )
+            h3_start_map = dict(zip(h3_bounds['track_id'], h3_bounds['h3_start']))
+            h3_end_map = dict(zip(h3_bounds['track_id'], h3_bounds['h3_end']))
+        else:
+            h3_start_map = {}
+            h3_end_map = {}
+
         for row in df_tracks_info.itertuples():
             track_id = row.track_id
             player_id = row.player_id
@@ -97,11 +111,24 @@ class DuckEngine:
             group_id = row.group_id
             multimodal_id = row.multimodal_id
             time_slot = self.get_time_slot(start_time)
-            tracks.append((campaign_id, campaign_type, player_id, group_id, track_id, multimodal_id, mode, start_time, end_time, 
-                           duration, distance, time_slot.value))
 
-        df_duck_tracks_info = pd.DataFrame(tracks, columns=['campaign_id', 'campaign_type', 'player_id', 'group_id', 'track_id', 
-                                                            'multimodal_id', 'mode', 'start_time', 'end_time', 'duration', 'distance', 'time_slot'])
+            # ottieni h3 iniziale e finale per questa traccia (se presenti)
+            h3_start = h3_start_map.get(track_id)
+            h3_end = h3_end_map.get(track_id)
+
+            tracks.append((
+                campaign_id, campaign_type, player_id, group_id, track_id, multimodal_id, mode,
+                start_time, end_time, duration, distance, time_slot.value, h3_start, h3_end
+            ))
+
+        df_duck_tracks_info = pd.DataFrame(
+            tracks,
+            columns=[
+                'campaign_id', 'campaign_type', 'player_id', 'group_id', 'track_id',
+                'multimodal_id', 'mode', 'start_time', 'end_time', 'duration', 'distance',
+                'time_slot', 'h3_start', 'h3_end'
+            ]
+        )
         return df_duck_tracks_info
 
 

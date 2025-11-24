@@ -208,10 +208,6 @@ def api_get_duck_departures_geo():
 def home():
     return render_template('index.html')
 
-@app.route('/sip')
-def sip():
-    return render_template('sip_my.html')
-
 @app.route('/campaign')
 def campaign_h3():
     return render_template('campaign_h3.html')

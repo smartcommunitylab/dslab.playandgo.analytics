@@ -14,6 +14,7 @@ import pandas as pd
 from storage.storage_engine import FileStorage
 from psycopg.psyco_engine import PsycoEngine
 from duck.duck_engine import DuckEngine
+from h3_analysis import get_duck_avg_duration, get_duck_trips, get_duck_user_departure
 
 from flask import Flask, request, render_template
 
@@ -53,36 +54,13 @@ def get_h3_geo(territory_id, year, mode, target_resolution):
 
 def get_duck_avg_duration_geo(territory_id:str, campaign_id:str, mode:str, time_slot:str, group_id:str,
                               target_resolution:int, color_by_avg:bool=True, min_tracks:int=5) -> str:
-    query = f"""
-        SELECT nearest_edges.h3, count(*) as tracks, avg(track_info.duration) as avg_duration
-        FROM nearest_edges JOIN track_info
-        ON nearest_edges.track_id=track_info.track_id
-        WHERE track_info.campaign_id='{campaign_id}' AND nearest_edges.ordinal=0""" 
-    if mode is not None:    
-        query = query + f" AND track_info.mode='{mode}'"
-    if time_slot is not None:
-        query = query + f" AND track_info.time_slot='{time_slot}'"
-    if group_id is not None:
-        query = query + f" AND track_info.group_id='{group_id}'"        
-    query = query + f" GROUP BY nearest_edges.h3"
-        
-    duck_engine = duckengine_map[territory_id]
-    results = duck_engine.execute_query(query)
-    # Crea un DataFrame dai risultati
-    df_h3 = pd.DataFrame(results, columns=['h3', 'tracks', 'avg_duration'])
-    # Raggruppa i valori h3 alla risoluzione target usando il parent H3
-    df_h3['h3_parent'] = df_h3['h3'].apply(lambda x: h3.cell_to_parent(x, target_resolution))
-    # Calcola la somma pesata delle durate (weighted by tracks) e il totale tracks per ogni parent
-    df_h3['duration_weighted'] = df_h3['avg_duration'] * df_h3['tracks']
-    df_agg = df_h3.groupby('h3_parent', as_index=False).agg(
-        tracks=('tracks', 'sum'),
-        duration_weighted_sum=('duration_weighted', 'sum')
-    )
-    # Calcola la durata media pesata per parent
-    df_agg['avg_duration'] = df_agg['duration_weighted_sum'] / df_agg['tracks']
-    df_agg = df_agg.drop(columns=['duration_weighted_sum'])
+    duck_engine = DuckEngine(territory_id, campaign_id, True)
+    df_agg = get_duck_avg_duration(campaign_id, mode, time_slot, group_id, target_resolution, duck_engine)
+    duck_engine.close()
+    
     # Toglie le celle H3 che hanno meno di x tracce distinte
     df_agg = df_agg[df_agg['tracks'] >= min_tracks]
+    
     # Aggiungo i colori
     cmap = plt.get_cmap('plasma')
     if color_by_avg:
@@ -100,32 +78,13 @@ def get_duck_avg_duration_geo(territory_id:str, campaign_id:str, mode:str, time_
 
 def get_duck_trips_geo(territory_id:str, campaign_id:str, mode:str, time_slot:str, group_id:str, 
                        target_resolution:int, min_tracks:int=5) -> str:
-    query = f"""
-        SELECT h3, count(*) AS tracks
-        FROM (SELECT nearest_edges.track_id, nearest_edges.h3 
-        FROM nearest_edges JOIN track_info
-        ON nearest_edges.track_id=track_info.track_id
-        WHERE track_info.campaign_id='{campaign_id}'""" 
-    if mode is not None:    
-        query = query + f" AND track_info.mode='{mode}'"
-    if time_slot is not None:
-        query = query + f" AND track_info.time_slot='{time_slot}'"
-    if group_id is not None:
-        query = query + f" AND track_info.group_id='{group_id}'"
-    query = query + f" GROUP BY nearest_edges.track_id, nearest_edges.h3) GROUP By h3"
+    duck_engine = DuckEngine(territory_id, campaign_id, True)
+    df_agg = get_duck_trips(campaign_id, mode, time_slot, group_id, target_resolution, duck_engine)
+    duck_engine.close()
     
-    duck_engine = duckengine_map[territory_id]
-    results = duck_engine.execute_query(query)
-    # Crea un DataFrame dai risultati
-    df_h3 = pd.DataFrame(results, columns=['h3', 'tracks'])
-    # Raggruppa i valori h3 alla risoluzione target usando il parent H3
-    df_h3['h3_parent'] = df_h3['h3'].apply(lambda x: h3.cell_to_parent(x, target_resolution))
-    # Calcola la somma delle tracce per ogni parent
-    df_agg = df_h3.groupby('h3_parent', as_index=False).agg(
-        tracks=('tracks', 'sum')
-    )
     # Toglie le celle H3 che hanno meno di x tracce distinte
     df_agg = df_agg[df_agg['tracks'] >= min_tracks]
+    
     # Aggiungo i colori
     cmap = plt.get_cmap('plasma')
     norm = plt.Normalize(df_agg['tracks'].min(), df_agg['tracks'].max())
@@ -137,16 +96,38 @@ def get_duck_trips_geo(territory_id:str, campaign_id:str, mode:str, time_slot:st
     return h3_gdf.to_json()
 
 
+def get_duck_departure_geo(territory_id:str, campaign_id:str, mode:str, time_slot:str, group_id:str, 
+                           h3_destination:int, target_resolution:int, min_tracks:int=5) -> str:
+    duck_engine = DuckEngine(territory_id, campaign_id, True)
+    df_agg = get_duck_user_departure(campaign_id, mode, time_slot, group_id, h3_destination, target_resolution, duck_engine)
+    duck_engine.close()
+    
+    # Toglie le celle H3 che hanno meno di x tracce distinte
+    df_agg = df_agg[df_agg['unique_users'] >= min_tracks]
+    
+    # Aggiungo i colori
+    cmap = plt.get_cmap('plasma')
+    norm = plt.Normalize(df_agg['unique_users'].min(), df_agg['unique_users'].max())
+    df_agg['color'] = df_agg['unique_users'].apply(lambda x: colors.to_hex(cmap(norm(x))))
+
+    # Crea un GeoDataFrame con le geometrie H3
+    h3_geoms = df_agg["h3_start_parent"].apply(lambda x: h3_to_geojson(x))
+    h3_gdf = gpd.GeoDataFrame(data=df_agg, geometry=h3_geoms, crs=4326)
+    return h3_gdf.to_json()
+
+
 app = Flask(__name__)
 server_port = os.getenv("SERVER_PORT", 8078)
 psyco_engine = PsycoEngine()
 #psyco_engine.init_tables()
 
-territory_ids = ["L", "Ferrara"]
-duckengine_map = {}
-for territory_id in territory_ids:
-    duck_engine = DuckEngine(territory_id, True)
-    duckengine_map[territory_id] = duck_engine
+
+@app.route('/api/geo/h3/shape', methods=['GET'])
+def api_get_h3_shape():
+    h3_cell = request.args.get('h3_cell', type=str)
+    polygon = h3_to_geojson(h3_cell)
+    gdf = gpd.GeoDataFrame(index=[0], crs='EPSG:4326', geometry=[polygon])
+    return gdf.to_json()
 
 
 @app.route('/api/geo/h3', methods=['GET'])
@@ -196,7 +177,7 @@ def api_get_duck_duration_geo():
     return json
 
 
-@app.route('/api/geo/duck/trips', methods=['GET'])
+@app.route('/api/geo/duck/trip', methods=['GET'])
 def api_get_duck_trips_geo():
     territory_id = request.args.get('territory_id', type=str)
     campaign_id = request.args.get('campaign_id', type=str)
@@ -209,9 +190,27 @@ def api_get_duck_trips_geo():
     return json
 
 
+@app.route('/api/geo/duck/departure', methods=['GET'])
+def api_get_duck_departures_geo():
+    territory_id = request.args.get('territory_id', type=str)
+    campaign_id = request.args.get('campaign_id', type=str)
+    mode = request.args.get('mode', type=str, default=None)
+    time_slot = request.args.get('time_slot', type=str, default=None)
+    group_id = request.args.get('group_id', type=str, default=None)
+    target_resolution = request.args.get('target_resolution', type=int, default=8)
+    h3_destination = request.args.get('h3_destination', type=str)
+    min_tracks = request.args.get('min_tracks', type=int, default=5)
+    json = get_duck_departure_geo(territory_id, campaign_id, mode, time_slot, group_id, h3_destination, target_resolution, min_tracks)
+    return json
+
+
 @app.route('/')
 def home():
     return render_template('index.html')
+
+@app.route('/sip')
+def sip():
+    return render_template('sip_my.html')
 
 @app.route('/campaign')
 def campaign_h3():
@@ -221,9 +220,13 @@ def campaign_h3():
 def duck_avg_duration_h3():
     return render_template('duck_duration.html')
 
-@app.route('/duck/trips')
+@app.route('/duck/trip')
 def duck_trips_h3():
     return render_template('duck_trips.html')
+
+@app.route('/duck/departure')
+def duck_departures_h3():
+    return render_template('duck_departure.html')
 
 if __name__ == "__main__":    
     app.run(host='0.0.0.0', port=server_port)

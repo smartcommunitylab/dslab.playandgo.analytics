@@ -294,12 +294,16 @@ class FileStorage:
         """Load multiple dataframes from files."""
         df_result = None
         for year in years:
-            s, df = self.load_dataframe(territory_id, df_file, year)
-            # append dataframe to df_result
-            if df_result is None:
-                df_result = df
-            else:
-                df_result = pd.concat([df_result, df], ignore_index=True)
+            try:
+                s, df = self.load_dataframe(territory_id, df_file, year)
+                # append dataframe to df_result
+                if df_result is None:
+                    df_result = df
+                else:
+                    df_result = pd.concat([df_result, df], ignore_index=True)
+            except FileNotFoundError:
+                logger.warning(f"File for year {year} not found for territory {territory_id} and dataframe {df_file}. Skipping.")
+                
         return df_result
     
 

@@ -2,48 +2,50 @@ import logging
 
 from duck.duck_engine import DuckEngine
 from storage.storage_engine import FileStorage
+from playandgo.pg_engine import PlayAndGoEngine
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s - %(name)s: %(message)s')
 logger = logging.getLogger(__name__)
 
 h3_level = 10
-years = ["2023","2024", "2025"]
+default_years = ["2022","2023", "2025"]
 
 if __name__ == "__main__": 
-    territory_ids = ["L"]
-    # create a map with <territory_id, DuckEngine>
-    engine_map = {}
-    for territory_id in territory_ids:
-        duck_engine = DuckEngine(territory_id, False)
-        engine_map[territory_id] = duck_engine
+    territory_ids = ["Ferrara"]
 
     storage_engine = FileStorage()
+    playandgo_engine = PlayAndGoEngine()
     
     for territory_id in territory_ids:
-        for year in years:
+        # get campaigns from PlayAndGo
+        campaigns = playandgo_engine.get_campaigns(territory_id)
+        # for each campaign 
+        for campaign in campaigns:
+            campaign_id = str(campaign['_id'])
+            # get starting and endig years
+            years = []
+            if(campaign['type'] == "personal"):
+                years = default_years
+            else:
+                start_year = campaign['dateFrom'].year
+                end_year = campaign['dateTo'].year
+                # get a list for years to process
+                for year in range(start_year, end_year + 1):
+                    year_str = str(year)
+                    if year_str not in years:
+                        years.append(year_str)
+
             # nearest edges
-            size, df = storage_engine.load_dataframe(territory_id, storage_engine.nearest_edges, year)
-            df_duck_nearest_edges = duck_engine.convert_nearest_edges(df, h3_level)
-            storage_engine.save_df(territory_id, storage_engine.duck_nearest_edges, df_duck_nearest_edges, year, False)
-            rows, columns = df_duck_nearest_edges.shape
-            logger.info(f"Imported {territory_id} {year} Nearest Edges Rows: {rows}, Columns: {columns}")    
+            df_total_edges = storage_engine.load_multiple_dataframes(territory_id, storage_engine.nearest_edges, years)
+            df_campaign_tracks = storage_engine.load_multiple_dataframes(territory_id, storage_engine.mapped_campaign_groups, years)
+            duck_engine = DuckEngine(territory_id, campaign_id, False)
+            df_duck_nearest_edges, df_duck_tracks_info = duck_engine.convert_campaign_data(
+                campaign_id, h3_level, df_campaign_tracks, df_total_edges
+            )
+            duck_engine.import_dataframe(duck_engine.table_nearest_edges, df_duck_nearest_edges)
+            duck_engine.import_dataframe(duck_engine.table_track_info, df_duck_tracks_info)
+            duck_engine.close()
 
-            # campaign track group info
-            size, df = storage_engine.load_dataframe(territory_id, storage_engine.mapped_campaign_groups, year)
-            duck_df = duck_engine.convert_campaign_track_group_info(df, df_duck_nearest_edges)
-            storage_engine.save_df(territory_id, storage_engine.duck_tracks_info, duck_df, year, False)
-            rows, columns = duck_df.shape
-            logger.info(f"Imported {territory_id} {year} Tracks Rows: {rows}, Columns: {columns}")  
-   
-        duck_engine = engine_map[territory_id]
-        duck_engine.import_parquet(duck_engine.table_nearest_edges, f"*{storage_engine.duck_nearest_edges}.parquet")
-        logger.info(f"Imported Nearest Edges to DuckDB table: {duck_engine.table_nearest_edges}")
-
-        duck_engine.import_parquet(duck_engine.table_track_info, f"*{storage_engine.duck_tracks_info}.parquet")
-        logger.info(f"Imported Tracks Info to DuckDB table: {duck_engine.table_track_info}")
-    
-    for territory_id, duck_engine in engine_map.items():
-        duck_engine.close()
 
 
 

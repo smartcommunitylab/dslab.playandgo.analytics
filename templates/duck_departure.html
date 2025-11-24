@@ -37,12 +37,12 @@
     </style>
 </head>
 <body>
-    <h2>Mappa dei passaggi su cella H3</h2>
+    <h2>Mappa partenza/arrivo su cella H3</h2>
     <div class="controls">
         <label>Territorio: <input type="text" id="territory_id" value="L"></label>
         <label>Campagna: <input type="text" id="campaign_id" value="L.personal"></label>
         <label>Gruppo: <input type="text" id="group_id" value=""></label>
-        <label>Risoluzione: <input type="number" id="target_resolution" value="10" min="5" max="10"></label>
+        <label>Risoluzione: <input type="number" id="target_resolution" value="7" min="5" max="10"></label>
         <label>Modalità:
             <select id="mode">
                 <option value="">All</option>
@@ -61,9 +61,10 @@
                 <option value="20-05">20:00 - 04:59</option>
             </select>
         </label>
-        <label>Tracce minime:
+        <label>Utenti minimi:
             <input type="number" id="min_tracks" value="5" min="1" max="25" style="width:60px;">
         </label>
+        <label>Destinazione: <input type="text" id="h3_destination" value="871f99813ffffff"></label>
         <!-- Pulsante Load più visibile con icona -->
         <button id="btn-load" class="btn-load" onclick="loadGeoJson()" title="Carica dati H3">
             <!-- semplice icona SVG di caricamento/map -->
@@ -114,6 +115,7 @@
             var time_slot = document.getElementById('time_slot').value;
             var group_id = document.getElementById('group_id').value;
             var min_tracks = document.getElementById('min_tracks').value;
+            var h3_destination = document.getElementById('h3_destination').value;
 
             // Base URL con param obbligatori
             var params = [];
@@ -121,6 +123,7 @@
             params.push("campaign_id=" + encodeURIComponent(campaign_id));
             params.push("target_resolution=" + encodeURIComponent(target_resolution));
             params.push("min_tracks=" + encodeURIComponent(min_tracks));
+            params.push("h3_destination=" + encodeURIComponent(h3_destination));
 
             // Aggiungi mode e time_slot solo se non stringhe vuote
             if (mode && mode !== "") {
@@ -133,7 +136,7 @@
                 params.push("group_id=" + encodeURIComponent(group_id));
             }
             
-            var url = "/api/geo/duck/trip?" + params.join("&");
+            var url = "/api/geo/duck/departure?" + params.join("&");
 
             setLoadingState(true);
             fetch(url)
@@ -147,20 +150,24 @@
                     }
                     geoJsonLayer = L.geoJSON(data, {
                         style: function(feature) {
-                            return {
+                            style = {
                                 color: '#000000',
                                 fillColor: feature.properties.color || '#3388ff',
                                 weight: 1,
-                                fillOpacity: 0.7
+                                fillOpacity: 0.6
                             };
+                            if(feature.properties && feature.properties.unique_users) {
+                                if (feature.properties.h3_start_parent == h3_destination) {
+                                    style.color = '#ff0000'; // Rosso per destinazione
+                                    style.weight = 3;
+                                } 
+                            }
+                            return style;
                         },
                         onEachFeature: function(feature, layer) {
                             if (feature.properties) {
-                                var tracksText = feature.properties.tracks !== undefined ? ("Tracce: " + feature.properties.tracks) : "";
-                                var avgText = feature.properties.avg_duration !== undefined ? ("<br>Durata media: " + (Number(feature.properties.avg_duration) || 0).toFixed(2) + " sec") : "";
-                                if (tracksText || avgText) {
-                                    layer.bindPopup(tracksText + avgText);
-                                }
+                                var userText = feature.properties.unique_users !== undefined ? ("Utenti: " + feature.properties.unique_users) : "";
+                                layer.bindPopup(userText);
                             }
                         }
                     }).addTo(map);

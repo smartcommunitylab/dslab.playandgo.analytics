@@ -104,17 +104,17 @@ class DuckEngine:
             h3_end_map = {}
 
         for _, row in df_tracks_info.iterrows():
-            track_id = row.track_id
-            player_id = row.player_id
-            campaign_id = row.campaign_id
-            campaign_type = row.campaign_type
-            start_time = row.start_time
-            end_time = row.end_time
-            mode = row.mode
-            duration = row.duration
-            distance = row.distance
-            group_id = row.group_id
-            multimodal_id = row.multimodal_id
+            track_id = row['track_id']
+            player_id = row['player_id']
+            campaign_id = row['campaign_id']
+            campaign_type = row['campaign_type']
+            start_time = row['start_time']
+            end_time = row['end_time']
+            mode = row['mode']
+            duration = row['duration']
+            distance = row['distance']
+            group_id = row['group_id']
+            multimodal_id = row['multimodal_id']
             time_slot = self.get_time_slot(start_time)
 
             # ottieni h3 iniziale e finale per questa traccia (se presenti)
@@ -159,17 +159,17 @@ class DuckEngine:
 
         tracks = []
         for _, row in df_tracks_info.iterrows():
-            track_id = row.track_id
-            player_id = row.player_id
-            campaign_id = row.campaign_id
-            campaign_type = row.campaign_type
-            start_time = row.start_time
-            end_time = row.end_time
-            mode = row.mode
-            duration = row.duration
-            distance = row.distance
-            group_id = row.group_id
-            multimodal_id = row.multimodal_id
+            track_id = row['track_id']
+            player_id = row['player_id']
+            campaign_id = row['campaign_id']
+            campaign_type = row['campaign_type']
+            start_time = row['start_time']
+            end_time = row['end_time']
+            mode = row['mode']
+            duration = row['duration']
+            distance = row['distance']
+            group_id = row['group_id']
+            multimodal_id = row['multimodal_id']
             time_slot = self.get_time_slot(start_time)
 
             # ottieni h3 iniziale e finale per questa traccia (se presenti)

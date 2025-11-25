@@ -21,6 +21,39 @@ def get_utc_datetime(dt):
     return dt
 
 
+def import_campaigns_data(territory_id:str, save_csv=False):
+    logger.info(f"import_campaigns_data")
+    # Inizializza gli engine
+    playandgo_engine = PlayAndGoEngine()
+    file_storage = FileStorage()
+
+    # Ottieni i dati da PlayAndGo
+    # columns=['territory_id', 'campaign_id', 'type', 'dateFrom', 'dateTo', 'description']
+    ls_campaigns = []
+    for campaign in playandgo_engine.get_campaigns(territory_id):
+        try:
+            c_data = {}
+            c_data['territory_id'] = territory_id
+            c_data['campaign_id'] = str(campaign['_id'])
+            c_data['type'] = campaign['type']
+            c_data['date_from'] = get_utc_datetime(campaign['dateFrom'])
+            c_data['date_to'] = get_utc_datetime(campaign['dateTo'])
+            c_data['means'] = campaign['validationData']['means'] if 'validationData' in campaign and 'means' in campaign['validationData'] else []
+            c_data['name'] = campaign['name']['it'] if 'name' in campaign and 'it' in campaign['name'] else campaign['name']['en']
+            ls_campaigns.append(c_data)
+            logger.info(f"Processed campaign: {campaign['_id']}")
+        except Exception as e:
+            logger.warning(f"Error processing campaign: {campaign['_id']}, Error: {e}")
+            continue
+        
+    df = pd.DataFrame(ls_campaigns, columns=['territory_id', 'campaign_id', 'type', 'date_from', 'date_to', 'means', 'name'])
+    rows, columns = df.shape
+    logger.info(f"Imported Campaigns Rows: {rows}, Columns: {columns}")
+    file_storage.save_df(territory_id, file_storage.campaigns, df, None, save_csv)
+    info_map = {"name": file_storage.campaigns, "rows": rows}
+    return info_map
+
+
 def import_nearest_edges_by_locate(territory_id, start_time, end_time=None):
     playandgo_engine = PlayAndGoEngine()
     valhalla_engine = ValhallaEngine()

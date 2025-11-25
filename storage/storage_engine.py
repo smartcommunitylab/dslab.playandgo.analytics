@@ -10,6 +10,7 @@ class FileStorage:
         self.store_path = os.getenv("STORAGE_PATH", "./files/")
         if self.store_path.endswith("/") or self.store_path.endswith("\\"):
             self.store_path = self.store_path[:-1]
+        self.campaigns = "campaigns"
         self.campaign_tracks = "campaign_tracks"
         self.campaign_groups = "campaign_groups"
         self.campaign_tracks_info = "campaign_tracks_info"
@@ -19,8 +20,8 @@ class FileStorage:
         self.way_shapes = "way_shapes"
         self.h3_info = "h3_info"
         self.mapped_campaign_groups = "mapped_campaign_groups"
-        self.duck_nearest_edges = "duck_nearest_edges"
-        self.duck_tracks_info = "duck_tracks_info"
+        #self.duck_nearest_edges = "duck_nearest_edges"
+        #self.duck_tracks_info = "duck_tracks_info"
 
 
     def check_directory(self, territory_id:str):

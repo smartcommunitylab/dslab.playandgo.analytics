@@ -6,12 +6,24 @@ from flask import Flask, request, Response
 from datetime import datetime
 
 from import_tracks_data import import_campaign_tracks_data, import_campaign_groups_data, import_nearest_edges_by_trace 
-from import_tracks_data import get_df_info_list, merge_campaign_tracks_groups, import_campaign_tracks_info_data
+from import_tracks_data import get_df_info_list, merge_campaign_tracks_groups, import_campaign_tracks_info_data, import_campaigns_data
+from import_duckdb_data import import_duckdb_data
 
 app = Flask(__name__)
 server_port = os.getenv("SERVER_PORT", 8078)
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s - %(name)s: %(message)s')
+
+@app.route('/api/import/campaigns', methods=['GET'])
+def api_import_campaigns_data():
+    start = datetime.now()
+    territory_id = request.args.get('territory_id', type=str)
+    save_csv = request.args.get('save_csv', default=False, type=bool)
+    info_map = import_campaigns_data(territory_id, save_csv)
+    stop = datetime.now()
+    print(f"api_import_campaigns_data Territory ID: {territory_id}, Time:{(stop - start).total_seconds()} seconds")
+    return info_map
+
 
 @app.route('/api/import/campaign-tracks', methods=['GET'])
 def api_import_campaign_tracks_data():
@@ -89,6 +101,17 @@ def api_merge_campaign_tracks_group():
     print(f"api_merge_campaign_tracks_groups Territory ID: {territory_id}, Time:{(stop - start).total_seconds()} seconds")
     return info_map
 
+
+@app.route('/api/import/duckdb', methods=['GET'])
+def api_import_duckdb_data():   
+    start = datetime.now()
+    territory_id = request.args.get('territory_id', type=str)
+    filter_campaign_id = request.args.get('filter_campaign_id', default=None, type=str)
+    skip_personal = request.args.get('skip_personal', default=True, type=bool)
+    import_duckdb_data(territory_id, filter_campaign_id, skip_personal)
+    stop = datetime.now()
+    print(f"api_import_duckdb_data Territory ID: {territory_id}, Time:{(stop - start).total_seconds()} seconds")
+    return {"status": "completed"}
 
 if __name__ == "__main__":    
     app.run(host='0.0.0.0', port=server_port)

@@ -47,11 +47,13 @@ class DuckEngine:
 
     def import_parquet(self, table_name:str, file_pattern:str):
         self.conn.execute(f"CREATE OR REPLACE TABLE {table_name} AS SELECT * FROM read_parquet('{file_pattern}')")
+        self.conn.execute(f"CHECKPOINT")
 
     
     def import_dataframe(self, table_name:str, df:pd.DataFrame):
         if df is not None and not df.empty:
             self.conn.execute(f"CREATE OR REPLACE TABLE {table_name} AS SELECT * FROM df")
+            self.conn.execute(f"CHECKPOINT")
 
 
     def convert_nearest_edges(self, df_nearest_edges, h3_level:int) -> pd.DataFrame: 

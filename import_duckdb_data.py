@@ -8,10 +8,10 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s - %(na
 logger = logging.getLogger(__name__)
 
 h3_level = 10
-default_years = ["2022","2023", "2025"]
+default_years = ["2023","2024", "2025"]
 
 if __name__ == "__main__": 
-    territory_ids = ["Ferrara"]
+    territory_ids = ["L"]
 
     storage_engine = FileStorage()
     playandgo_engine = PlayAndGoEngine()

@@ -24,7 +24,7 @@ class DuckEngine:
         if self.store_path.endswith("/") or self.store_path.endswith("\\"):
             self.store_path = self.store_path[:-1]
         if campaign_id is not None:
-            self.database_path = Path(f"{self.store_path}/{territory_id}/{campaign_id}_database.duckdb").absolute()
+            self.database_path = Path(f"{self.store_path}/{territory_id}/campaigns/{campaign_id}_database.duckdb").absolute()
         else:
             self.database_path = Path(f"{self.store_path}/{territory_id}/duckdb_database.duckdb").absolute()
         self.conn = duckdb.connect(self.database_path, read_only=read_only)
@@ -60,10 +60,7 @@ class DuckEngine:
         df_nearest_edges['h3_parent'] = df_nearest_edges['h3'].apply(lambda x: h3.cell_to_parent(x, h3_level))
         edges = []
         last_track_id = ""
-        for row in df_nearest_edges.itertuples():
-            track_id = row.track_id
-            timestamp = row.timestamp
-            h3_id = row.h3_parent
+        for track_id, timestamp, h3_id in zip(df_nearest_edges['track_id'], df_nearest_edges['timestamp'], df_nearest_edges['h3_parent']):
             if track_id != last_track_id:
                 last_track_id = track_id
                 last_h3_id = ""
@@ -106,7 +103,7 @@ class DuckEngine:
             h3_start_map = {}
             h3_end_map = {}
 
-        for row in df_tracks_info.itertuples():
+        for _, row in df_tracks_info.iterrows():
             track_id = row.track_id
             player_id = row.player_id
             campaign_id = row.campaign_id
@@ -144,12 +141,12 @@ class DuckEngine:
         if (df_tracks_info is None) or (df_nearest_edges is None):
             return None, None
         # from df_tracks_info get all track_id that belong to the campaign_id
-        df_tracks_info = df_tracks_info.loc[df_tracks_info['campaign_id'] == campaign_id]
+        df_tracks_info = df_tracks_info[df_tracks_info['campaign_id'] == campaign_id]
         # from df_duck_nearest_edges get all rows that belong to the track_id in df_tracks_info
         track_ids = df_tracks_info['track_id'].unique().tolist()
-        df_nearest_edges = df_nearest_edges.loc[df_nearest_edges['track_id'].isin(track_ids)]
+        df_nearest_edges = df_nearest_edges[df_nearest_edges['track_id'].isin(track_ids)]
 
-        df_duck_nearest_edges = self.convert_nearest_edges(df_nearest_edges, h3_level)
+        df_duck_nearest_edges = self.convert_nearest_edges(df_nearest_edges.copy(), h3_level)
 
         # Precalcola h3 di inizio (ordinal=0) e h3 di fine (ultimo ordinal) per ciascun track_id
         df_edges_sorted = df_duck_nearest_edges.sort_values(['track_id', 'ordinal'])
@@ -161,7 +158,7 @@ class DuckEngine:
         h3_end_map = dict(zip(h3_bounds['track_id'], h3_bounds['h3_end']))
 
         tracks = []
-        for row in df_tracks_info.itertuples():
+        for _, row in df_tracks_info.iterrows():
             track_id = row.track_id
             player_id = row.player_id
             campaign_id = row.campaign_id

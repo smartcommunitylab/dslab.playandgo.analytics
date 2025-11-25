@@ -12,7 +12,6 @@ import geopandas as gpd
 import pandas as pd
 
 from storage.storage_engine import FileStorage
-from psycopg.psyco_engine import PsycoEngine
 from duck.duck_engine import DuckEngine
 from h3_analysis import get_duck_avg_duration, get_duck_trips, get_duck_user_departure
 
@@ -26,30 +25,6 @@ def h3_to_geojson(h3_cell):
     """Convert H3 index to GeoJSON Polygon."""
     boundary = h3.cells_to_geo([h3_cell])
     return Polygon(shape(boundary))
-
-
-def get_h3_geo(territory_id, year, mode, target_resolution):
-    df_h3_info = psyco_engine.get_h3_info(territory_id, year, mode)
-    # Crea una nuova colonna con l'H3 parent
-    df_h3_info['h3_parent'] = df_h3_info['h3'].apply(lambda x: h3.cell_to_parent(x, target_resolution))
-    # Tieni solo una riga per ogni coppia (track_id, h3)
-    df_unique = df_h3_info.drop_duplicates(subset=['track_id', 'h3_parent'])
-    # Conta quante tracce distinte hanno attraversato ogni h3
-    h3_counts = df_unique['h3_parent'].value_counts().reset_index()
-    h3_counts.columns = ['h3_parent', 'distinct_track_count']
-    # Toglie le celle H3 che hanno meno di 15 tracce distinte
-    h3_counts_filtered = h3_counts[h3_counts['distinct_track_count'] >= 15]
-    # aggiungo i colori
-    # Scegli una colormap, ad esempio 'viridis'
-    cmap = plt.get_cmap('plasma')
-    # Normalizza i valori tra 0 e 1
-    norm = plt.Normalize(h3_counts_filtered['distinct_track_count'].min(), h3_counts_filtered['distinct_track_count'].max())
-    # Applica la colormap e converti in esadecimale
-    h3_counts_filtered['color'] = h3_counts_filtered['distinct_track_count'].apply(lambda x: colors.to_hex(cmap(norm(x))))
-    # Crea un GeoDataFrame con le geometrie H3
-    h3_geoms = h3_counts_filtered["h3_parent"].apply(lambda x: h3_to_geojson(x))
-    h3_gdf = gpd.GeoDataFrame(data=h3_counts_filtered, geometry=h3_geoms, crs=4326)
-    return h3_gdf.to_json()
 
 
 def get_duck_avg_duration_geo(territory_id:str, campaign_id:str, mode:str, time_slot:str, group_id:str,
@@ -118,49 +93,6 @@ def get_duck_departure_geo(territory_id:str, campaign_id:str, mode:str, time_slo
 
 app = Flask(__name__)
 server_port = os.getenv("SERVER_PORT", 8078)
-psyco_engine = PsycoEngine()
-#psyco_engine.init_tables()
-
-
-@app.route('/api/geo/h3/shape', methods=['GET'])
-def api_get_h3_shape():
-    h3_cell = request.args.get('h3_cell', type=str)
-    polygon = h3_to_geojson(h3_cell)
-    gdf = gpd.GeoDataFrame(index=[0], crs='EPSG:4326', geometry=[polygon])
-    return gdf.to_json()
-
-
-@app.route('/api/geo/h3', methods=['GET'])
-def api_get_h3_geo():
-    start = datetime.now()
-    territory_id = request.args.get('territory_id', type=str)
-    year = request.args.get('year', type=str)
-    mode = request.args.get('mode', type=str, default='all')
-    target_resolution = request.args.get('target_resolution', type=int, default=8)
-    json = get_h3_geo(territory_id, year, mode, target_resolution)
-    stop = datetime.now()
-    print(f"api_get_h3_geo Territory ID: {territory_id}, Time:{(stop - start).total_seconds()} seconds")
-    return json
-
-
-@app.route('/api/geo/campaign', methods=['GET'])
-def api_get_campaign_geo():
-    territory_id = request.args.get('territory_id', type=str)
-    campaign_id = request.args.get('campaign_id', type=str)
-    group_id = request.args.get('group_id', type=str, default=None)
-
-    if not territory_id:
-        return {"error": "territory_id is required"}, 400
-
-    file_path = FileStorage().get_campaign_analysis_filename(territory_id, campaign_id, group_id)
-    if not os.path.exists(file_path):
-        return {"error": "File not found"}, 404
-
-    # Leggi il Parquet e restituisci GeoJSON
-    gdf = gpd.read_parquet(file_path)
-    rows, columns = gdf.shape
-    logger.info(f"H3 data {territory_id}, {campaign_id}, {group_id} Rows: {rows}, Columns: {columns}")
-    return gdf.to_json()
 
 
 @app.route('/api/geo/duck/avg-duration', methods=['GET'])
@@ -207,10 +139,6 @@ def api_get_duck_departures_geo():
 @app.route('/')
 def home():
     return render_template('index.html')
-
-@app.route('/campaign')
-def campaign_h3():
-    return render_template('campaign_h3.html')
 
 @app.route('/duck/duration')
 def duck_avg_duration_h3():

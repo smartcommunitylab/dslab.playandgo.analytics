@@ -17,6 +17,7 @@ def import_duckdb_data(territory_id:str, filter_campaign_id:str=None, skip_perso
                 continue
         if(skip_personal and row['type'] == "personal"):
             continue
+        # TODO years slice for personal campaigns
         years = []
         start_year = row['date_from'].year
         end_year = row['date_to'].year

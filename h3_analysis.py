@@ -43,8 +43,7 @@ def get_duck_avg_duration(campaign_id:str, mode:str, time_slot:str, group_id:str
 def get_duck_trips(campaign_id:str, mode:str, time_slot:str, group_id:str, target_resolution:int, 
                        duck_engine: DuckEngine) -> pd.DataFrame:
     query = f"""
-        SELECT h3, count(*) AS tracks
-        FROM (SELECT nearest_edges.track_id, nearest_edges.h3 
+        SELECT nearest_edges.h3, count(distinct nearest_edges.track_id) as tracks
         FROM nearest_edges JOIN track_info
         ON nearest_edges.track_id=track_info.track_id
         WHERE track_info.campaign_id='{campaign_id}'""" 
@@ -54,7 +53,7 @@ def get_duck_trips(campaign_id:str, mode:str, time_slot:str, group_id:str, targe
         query = query + f" AND track_info.time_slot='{time_slot}'"
     if group_id is not None:
         query = query + f" AND track_info.group_id='{group_id}'"
-    query = query + f" GROUP BY nearest_edges.track_id, nearest_edges.h3) GROUP By h3"
+    query = query + f" GROUP BY nearest_edges.h3"
     
     results = duck_engine.execute_query(query)
     # Crea un DataFrame dai risultati

@@ -66,6 +66,7 @@ def get_duck_trips(campaign_id:str, mode:str, time_slot:str, group_id:str, targe
     )
     return df_agg
 
+
 def get_duck_user_departure(campaign_id:str, mode:str, time_slot:str, group_id:str, h3_destination:str,
                              target_resolution:int, duck_engine: DuckEngine) -> pd.DataFrame:
     query = f"""

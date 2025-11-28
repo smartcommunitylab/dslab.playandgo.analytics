@@ -2,11 +2,6 @@ import os
 import h3
 import logging
 
-from datetime import datetime
-
-import matplotlib.pyplot as plt
-from matplotlib import colors
-
 from shapely.geometry import shape, Polygon
 import geopandas as gpd
 import pandas as pd
@@ -35,15 +30,6 @@ def get_duck_avg_duration_geo(territory_id:str, campaign_id:str, mode:str, time_
     # Toglie le celle H3 che hanno meno di x tracce distinte
     df_agg = df_agg[df_agg['tracks'] >= min_tracks]
     
-    # Aggiungo i colori
-    cmap = plt.get_cmap('plasma')
-    if color_by_avg:
-        norm = plt.Normalize(df_agg['avg_duration'].min(), df_agg['avg_duration'].max())
-        df_agg['color'] = df_agg['avg_duration'].apply(lambda x: colors.to_hex(cmap(norm(x))))
-    else:
-        norm = plt.Normalize(df_agg['tracks'].min(), df_agg['tracks'].max())
-        df_agg['color'] = df_agg['tracks'].apply(lambda x: colors.to_hex(cmap(norm(x))))
-    
     # Crea un GeoDataFrame con le geometrie H3
     h3_geoms = df_agg["h3_parent"].apply(lambda x: h3_to_geojson(x))
     h3_gdf = gpd.GeoDataFrame(data=df_agg, geometry=h3_geoms, crs=4326)
@@ -58,11 +44,6 @@ def get_duck_trips_geo(territory_id:str, campaign_id:str, mode:str, time_slot:st
     
     # Toglie le celle H3 che hanno meno di x tracce distinte
     df_agg = df_agg[df_agg['tracks'] >= min_tracks]
-    
-    # Aggiungo i colori
-    cmap = plt.get_cmap('plasma')
-    norm = plt.Normalize(df_agg['tracks'].min(), df_agg['tracks'].max())
-    df_agg['color'] = df_agg['tracks'].apply(lambda x: colors.to_hex(cmap(norm(x))))
     
     # Crea un GeoDataFrame con le geometrie H3
     h3_geoms = df_agg["h3_parent"].apply(lambda x: h3_to_geojson(x))
@@ -79,11 +60,6 @@ def get_duck_departure_geo(territory_id:str, campaign_id:str, mode:str, time_slo
     # Toglie le celle H3 che hanno meno di x tracce distinte
     df_agg = df_agg[df_agg['unique_users'] >= min_tracks]
     
-    # Aggiungo i colori
-    cmap = plt.get_cmap('plasma')
-    norm = plt.Normalize(df_agg['unique_users'].min(), df_agg['unique_users'].max())
-    df_agg['color'] = df_agg['unique_users'].apply(lambda x: colors.to_hex(cmap(norm(x))))
-
     # Crea un GeoDataFrame con le geometrie H3
     h3_geoms = df_agg["h3_start_parent"].apply(lambda x: h3_to_geojson(x))
     h3_gdf = gpd.GeoDataFrame(data=df_agg, geometry=h3_geoms, crs=4326)

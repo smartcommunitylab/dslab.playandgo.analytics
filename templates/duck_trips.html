@@ -35,6 +35,9 @@
             vertical-align:middle;
         }
     </style>
+
+    <!-- chroma.js per la scala dei colori -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chroma-js/2.4.2/chroma.min.js"></script>
 </head>
 <body>
     <h2>Mappa dei passaggi su cella H3</h2>
@@ -142,25 +145,42 @@
                     return response.json();
                 })
                 .then(data => {
+                    // calcola min/max di 'tracks' per normalizzare la scala colore
+                    const vals = (data.features || []).map(f => {
+                        const v = Number((f.properties && f.properties.tracks) || 0);
+                        return isNaN(v) ? 0 : v;
+                    });
+                    const minVal = vals.length ? Math.min(...vals) : 0;
+                    const maxVal = vals.length ? Math.max(...vals) : 0;
+
+                    // se tutti i valori uguali usa colore costante, altrimenti crea la scala
+                    let colorScale;
+                    if (minVal === maxVal) {
+                        colorScale = () => '#feb24c';
+                    } else {
+                        // palette YlOrRd: più scuro per valori piccoli, più chiaro per valori grandi
+                        colorScale = chroma.scale(['#a50f15','#fecc5c']).domain([minVal, maxVal]);
+                    }
+
                     if (geoJsonLayer) {
                         map.removeLayer(geoJsonLayer);
                     }
                     geoJsonLayer = L.geoJSON(data, {
                         style: function(feature) {
+                            const props = feature.properties || {};
+                            const t = Number(props.tracks || 0) || 0;
+                            const fill = colorScale(t).hex();
                             return {
                                 color: '#000000',
-                                fillColor: feature.properties.color || '#3388ff',
+                                fillColor: fill,
                                 weight: 1,
-                                fillOpacity: 0.6
+                                fillOpacity: 0.7
                             };
                         },
                         onEachFeature: function(feature, layer) {
                             if (feature.properties) {
                                 var tracksText = feature.properties.tracks !== undefined ? ("Tracce: " + feature.properties.tracks) : "";
-                                var avgText = feature.properties.avg_duration !== undefined ? ("<br>Durata media: " + (Number(feature.properties.avg_duration) || 0).toFixed(2) + " sec") : "";
-                                if (tracksText || avgText) {
-                                    layer.bindPopup(tracksText + avgText);
-                                }
+                                layer.bindPopup(tracksText);
                             }
                         }
                     }).addTo(map);

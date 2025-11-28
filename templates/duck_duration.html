@@ -10,7 +10,6 @@
         #map { height: 80vh; width: 100%; margin-top: 10px; }
         .controls { margin-bottom: 10px; display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
         .controls input, .controls select { margin-right: 8px; }
-        /* Pulsante Load più visibile */
         .btn-load {
             display: inline-flex;
             align-items: center;
@@ -28,13 +27,11 @@
         }
         .btn-load:active { transform: translateY(1px); }
         .btn-load[disabled] { opacity: 0.6; cursor: not-allowed; box-shadow: none; }
-        .btn-icon {
-            width: 18px;
-            height: 18px;
-            display:inline-block;
-            vertical-align:middle;
-        }
+        .btn-icon { width: 18px; height: 18px; display:inline-block; vertical-align:middle; }
     </style>
+
+    <!-- chroma.js per la scala dei colori -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chroma-js/2.4.2/chroma.min.js"></script>
 </head>
 <body>
     <h2>Mappa della durata media dei viaggi con partenza da cella H3</h2>
@@ -64,16 +61,14 @@
         <label>Tracce minime:
             <input type="number" id="min_tracks" value="5" min="1" max="25" style="width:60px;">
         </label>
-        <!-- Pulsante Load più visibile con icona -->
         <button id="btn-load" class="btn-load" onclick="loadGeoJson()" title="Carica dati H3">
-            <!-- semplice icona SVG di caricamento/map -->
             <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                 <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
                 <circle cx="12" cy="12" r="3" stroke="#fff" stroke-width="1.6" fill="rgba(255,255,255,0.06)"/>
             </svg>
             Load
         </button>
-        <!-- Select per la colorazione -->
+
         <label style="margin-left:6px;">
             <select id="color_by_avg">
                 <option value="true" selected>Durata media</option>
@@ -93,26 +88,14 @@
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script>
-        // Centra la mappa su Lecco
         var map = L.map('map').setView([45.8566, 9.3977], 10);
-
-        // Aggiungi il layer OpenStreetMap
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '© OpenStreetMap'
-        }).addTo(map);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
 
         var geoJsonLayer = null;
         var btnLoad = document.getElementById('btn-load');
 
-        function showLoader(show) {
-            document.getElementById('loader').style.display = show ? 'block' : 'none';
-        }
-
-        function setLoadingState(isLoading) {
-            showLoader(isLoading);
-            btnLoad.disabled = isLoading;
-        }
+        function showLoader(show) { document.getElementById('loader').style.display = show ? 'block' : 'none'; }
+        function setLoadingState(isLoading) { showLoader(isLoading); btnLoad.disabled = isLoading; }
 
         function loadGeoJson() {
             var territory_id = document.getElementById('territory_id').value;
@@ -124,7 +107,6 @@
             var color_by_avg = document.getElementById('color_by_avg').value === 'true';
             var min_tracks = document.getElementById('min_tracks').value;
 
-            // Base URL con param obbligatori
             var params = [];
             params.push("territory_id=" + encodeURIComponent(territory_id));
             params.push("campaign_id=" + encodeURIComponent(campaign_id));
@@ -132,59 +114,59 @@
             params.push("min_tracks=" + encodeURIComponent(min_tracks));
             params.push("color_by_avg=" + encodeURIComponent(color_by_avg));
 
-            // Aggiungi mode e time_slot solo se non stringhe vuote
-            if (mode && mode !== "") {
-                params.push("mode=" + encodeURIComponent(mode));
-            }
-            if (time_slot && time_slot !== "") {
-                params.push("time_slot=" + encodeURIComponent(time_slot));
-            }
-            if (group_id && group_id !== "") {
-                params.push("group_id=" + encodeURIComponent(group_id));
-            }
-                        
+            if (mode && mode !== "") params.push("mode=" + encodeURIComponent(mode));
+            if (time_slot && time_slot !== "") params.push("time_slot=" + encodeURIComponent(time_slot));
+            if (group_id && group_id !== "") params.push("group_id=" + encodeURIComponent(group_id));
+
             var url = "/api/geo/duck/avg-duration?" + params.join("&");
 
             setLoadingState(true);
             fetch(url)
-                .then(response => {
-                    if (!response.ok) throw new Error("Network response was not ok");
-                    return response.json();
-                })
+                .then(response => { if (!response.ok) throw new Error("Network response was not ok"); return response.json(); })
                 .then(data => {
-                    if (geoJsonLayer) {
-                        map.removeLayer(geoJsonLayer);
+                    // seleziona valori da usare per la scala in base a color_by_avg
+                    const vals = (data.features || []).map(f => {
+                        const p = f.properties || {};
+                        const v = color_by_avg ? Number(p.avg_duration || 0) : Number(p.tracks || 0);
+                        return isNaN(v) ? 0 : v;
+                    });
+                    const minVal = vals.length ? Math.min(...vals) : 0;
+                    const maxVal = vals.length ? Math.max(...vals) : 0;
+
+                    let colorScale;
+                    if (minVal === maxVal) {
+                        colorScale = () => '#feb24c';
+                    } else {
+                        // più scuro per valori piccoli, più chiaro per valori grandi
+                        colorScale = chroma.scale(['#a50f15','#fecc5c']).domain([minVal, maxVal]);
                     }
+
+                    if (geoJsonLayer) map.removeLayer(geoJsonLayer);
                     geoJsonLayer = L.geoJSON(data, {
                         style: function(feature) {
+                            const props = feature.properties || {};
+                            const val = color_by_avg ? Number(props.avg_duration || 0) : Number(props.tracks || 0);
+                            const fill = colorScale(val).hex();
                             return {
                                 color: '#000000',
-                                fillColor: feature.properties.color || '#3388ff',
+                                fillColor: fill,
                                 weight: 1,
-                                fillOpacity: 0.6
+                                fillOpacity: 0.7
                             };
                         },
                         onEachFeature: function(feature, layer) {
                             if (feature.properties) {
                                 var tracksText = feature.properties.tracks !== undefined ? ("Tracce: " + feature.properties.tracks) : "";
                                 var avgText = feature.properties.avg_duration !== undefined ? ("<br>Durata media: " + (Number(feature.properties.avg_duration) || 0).toFixed(2) + " sec") : "";
-                                if (tracksText || avgText) {
-                                    layer.bindPopup(tracksText + avgText);
-                                }
+                                if (tracksText || avgText) layer.bindPopup(tracksText + avgText);
                             }
                         }
                     }).addTo(map);
-                    if (geoJsonLayer.getBounds && geoJsonLayer.getBounds().isValid()) {
-                        map.fitBounds(geoJsonLayer.getBounds());
-                    }
+
+                    if (geoJsonLayer.getBounds && geoJsonLayer.getBounds().isValid()) map.fitBounds(geoJsonLayer.getBounds());
                 })
-                .catch(error => {
-                    alert("Errore nel caricamento dei dati GeoJSON.");
-                    console.error(error);
-                })
-                .finally(() => {
-                    setLoadingState(false);
-                });
+                .catch(error => { alert("Errore nel caricamento dei dati GeoJSON."); console.error(error); })
+                .finally(() => { setLoadingState(false); });
         }
     </script>
 </body>

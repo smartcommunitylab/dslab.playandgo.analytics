@@ -157,13 +157,7 @@
                     // crea la scala cromatica: uso YlOrRd e inverto domain per ottenere
                     // colori più scuri per valori piccoli e più chiari per valori grandi.
                     // Cambia il nome della palette se preferisci (es. 'YlGnBu', 'Viridis', ...)
-                    let colorScale;
-                    if (minVal === maxVal) {
-                        // scala costante se tutti uguali
-                        colorScale = () => '#feb24c';
-                    } else {
-                        colorScale = chroma.scale(['#a50f15','#fecc5c']).domain([minVal, maxVal]);
-                    }
+                    let colorScale = chroma.scale(['#a50f15','#fecc5c']).domain([minVal, maxVal]);
 
                     if (geoJsonLayer) {
                         map.removeLayer(geoJsonLayer);

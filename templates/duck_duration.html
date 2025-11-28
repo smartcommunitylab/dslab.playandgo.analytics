@@ -133,13 +133,8 @@
                     const minVal = vals.length ? Math.min(...vals) : 0;
                     const maxVal = vals.length ? Math.max(...vals) : 0;
 
-                    let colorScale;
-                    if (minVal === maxVal) {
-                        colorScale = () => '#feb24c';
-                    } else {
-                        // più scuro per valori piccoli, più chiaro per valori grandi
-                        colorScale = chroma.scale(['#a50f15','#fecc5c']).domain([minVal, maxVal]);
-                    }
+                    // più scuro per valori piccoli, più chiaro per valori grandi
+                    let colorScale = chroma.scale(['#a50f15','#fecc5c']).domain([minVal, maxVal]);
 
                     if (geoJsonLayer) map.removeLayer(geoJsonLayer);
                     geoJsonLayer = L.geoJSON(data, {

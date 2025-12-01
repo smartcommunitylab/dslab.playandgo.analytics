@@ -119,7 +119,7 @@ def home():
 def duck_avg_duration_h3():
     return render_template('duck_duration.html')
 
-@app.route('/duck/trip')
+@app.route('/duck/trips')
 def duck_trips_h3():
     return render_template('duck_trips.html')
 

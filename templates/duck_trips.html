@@ -154,7 +154,7 @@
                     const maxVal = vals.length ? Math.max(...vals) : 0;
 
                     // palette YlOrRd: più scuro per valori piccoli, più chiaro per valori grandi
-                    colorScale = chroma.scale(['#a50f15','#fecc5c']).domain([minVal, maxVal]);
+                    colorScale = chroma.scale('YlOrRd').domain([minVal, maxVal]);
 
                     if (geoJsonLayer) {
                         map.removeLayer(geoJsonLayer);
@@ -168,7 +168,7 @@
                                 color: '#000000',
                                 fillColor: fill,
                                 weight: 1,
-                                fillOpacity: 0.7
+                                fillOpacity: 0.6
                             };
                         },
                         onEachFeature: function(feature, layer) {

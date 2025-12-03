@@ -34,21 +34,12 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chroma-js/2.4.2/chroma.min.js"></script>
 </head>
 <body>
-    <h2>Mappa della durata media dei viaggi con partenza da cella H3</h2>
+    <h2>Mappa della durata media dei viaggi con partenza/arrivo da cella H3</h2>
     <div class="controls">
         <label>Territorio: <input type="text" id="territory_id" value="L"></label>
         <label>Campagna: <input type="text" id="campaign_id" value="L.personal"></label>
         <label>Gruppo: <input type="text" id="group_id" value=""></label>
-        <label>Risoluzione: <input type="number" id="target_resolution" value="10" min="5" max="10"></label>
-        <label>Modalità:
-            <select id="mode">
-                <option value="">All</option>
-                <option value="walk">Walk</option>
-                <option value="bike">Bike</option>
-                <option value="bus">Bus</option>
-                <option value="train">Train</option>
-            </select>
-        </label>
+        <label>Risoluzione: <input type="number" id="target_resolution" value="7" min="5" max="10"></label>
         <label>Fascia oraria:
             <select id="time_slot">
                 <option value="">Tutti</option>
@@ -61,13 +52,15 @@
         <label>Tracce minime:
             <input type="number" id="min_tracks" value="5" min="1" max="25" style="width:60px;">
         </label>
+        <br>
+        <label>Cella: <input type="text" id="h3_cell" value="871f99813ffffff"></label>
         <label style="margin-left:6px;">
-            <select id="color_by_avg">
-                <option value="true" selected>Durata media</option>
-                <option value="false">Numero di tracce</option>
+            Tipo:
+            <select id="is_departure">
+                <option value="true" selected>Partenza</option>
+                <option value="false">Destinazione</option>
             </select>
-            Colorazioni
-        </label>
+        </label>        
         <button id="btn-load" class="btn-load" onclick="loadGeoJson()" title="Carica dati H3">
             <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                 <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
@@ -100,20 +93,20 @@
             var territory_id = document.getElementById('territory_id').value;
             var campaign_id = document.getElementById('campaign_id').value;
             var target_resolution = document.getElementById('target_resolution').value;
-            var mode = document.getElementById('mode').value;
             var time_slot = document.getElementById('time_slot').value;
             var group_id = document.getElementById('group_id').value;
-            var color_by_avg = document.getElementById('color_by_avg').value === 'true';
             var min_tracks = document.getElementById('min_tracks').value;
+            var h3_cell = document.getElementById('h3_cell').value;
+            var is_departure = document.getElementById('is_departure').value === 'true';
 
             var params = [];
             params.push("territory_id=" + encodeURIComponent(territory_id));
             params.push("campaign_id=" + encodeURIComponent(campaign_id));
             params.push("target_resolution=" + encodeURIComponent(target_resolution));
             params.push("min_tracks=" + encodeURIComponent(min_tracks));
-            params.push("color_by_avg=" + encodeURIComponent(color_by_avg));
+            params.push("h3_cell=" + encodeURIComponent(h3_cell));
+            params.push("is_departure=" + encodeURIComponent(is_departure));
 
-            if (mode && mode !== "") params.push("mode=" + encodeURIComponent(mode));
             if (time_slot && time_slot !== "") params.push("time_slot=" + encodeURIComponent(time_slot));
             if (group_id && group_id !== "") params.push("group_id=" + encodeURIComponent(group_id));
 
@@ -125,8 +118,7 @@
                 .then(data => {
                     // seleziona valori da usare per la scala in base a color_by_avg
                     const vals = (data.features || []).map(f => {
-                        const p = f.properties || {};
-                        const v = color_by_avg ? Number(p.avg_duration || 0) : Number(p.tracks || 0);
+                        const v = Number((f.properties && f.properties.avg_duration) || 0);
                         return isNaN(v) ? 0 : v;
                     });
                     const minVal = vals.length ? Math.min(...vals) : 0;
@@ -139,18 +131,31 @@
                     geoJsonLayer = L.geoJSON(data, {
                         style: function(feature) {
                             const props = feature.properties || {};
-                            const val = color_by_avg ? Number(props.avg_duration || 0) : Number(props.tracks || 0);
+                            const val = Number(props.avg_duration || 0) || 0;
                             const fill = colorScale(val).hex();
-                            return {
+                            const style = {
                                 color: '#000000',
                                 fillColor: fill,
                                 weight: 1,
-                                fillOpacity: 0.7
+                                fillOpacity: 0.6
                             };
+                            // evidenzia partenza/destinazione (se condizione già presente)
+                            if (is_departure) {
+                                if (props.h3_end_parent == h3_cell) {
+                                    style.color = '#ff0000';
+                                    style.weight = 3;
+                                }
+                            } else {
+                                if (props.h3_start_parent == h3_cell) {
+                                    style.color = '#ff0000';
+                                    style.weight = 3;
+                                }
+                            }
+                            return style;
                         },
                         onEachFeature: function(feature, layer) {
                             if (feature.properties) {
-                                var tracksText = feature.properties.tracks !== undefined ? ("Tracce: " + feature.properties.tracks) : "";
+                                var tracksText = feature.properties.tracks !== undefined ? ("Viaggi: " + feature.properties.tracks) : "";
                                 var avgText = feature.properties.avg_duration !== undefined ? ("<br>Durata media: " + (Number(feature.properties.avg_duration) || 0).toFixed(2) + " sec") : "";
                                 if (tracksText || avgText) layer.bindPopup(tracksText + avgText);
                             }

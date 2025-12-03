@@ -21,17 +21,20 @@ def h3_to_geojson(h3_cell):
     return Polygon(shape(boundary))
 
 
-def get_duck_avg_duration_geo(territory_id:str, campaign_id:str, mode:str, time_slot:str, group_id:str,
-                              target_resolution:int, color_by_avg:bool=True, min_tracks:int=5) -> str:
+def get_duck_avg_duration_geo(territory_id:str, campaign_id:str, time_slot:str, group_id:str,
+                              h3_cell:str, target_resolution:int, is_departure:bool, min_tracks:int=5) -> str:
     duck_engine = DuckEngine(territory_id, campaign_id, True)
-    df_agg = get_duck_avg_duration(campaign_id, mode, time_slot, group_id, target_resolution, duck_engine)
+    df_agg = get_duck_avg_duration(campaign_id, time_slot, group_id, h3_cell, target_resolution, is_departure, duck_engine)
     duck_engine.close()
     
     # Toglie le celle H3 che hanno meno di x tracce distinte
     df_agg = df_agg[df_agg['tracks'] >= min_tracks]
     
     # Crea un GeoDataFrame con le geometrie H3
-    h3_geoms = df_agg["h3_parent"].apply(lambda x: h3_to_geojson(x))
+    if is_departure:
+        h3_geoms = df_agg["h3_end_parent"].apply(lambda x: h3_to_geojson(x))
+    else:
+        h3_geoms = df_agg["h3_start_parent"].apply(lambda x: h3_to_geojson(x))
     h3_gdf = gpd.GeoDataFrame(data=df_agg, geometry=h3_geoms, crs=4326)
     return h3_gdf.to_json()
 
@@ -77,13 +80,14 @@ server_port = os.getenv("SERVER_PORT", 8078)
 def api_get_duck_duration_geo():
     territory_id = request.args.get('territory_id', type=str)
     campaign_id = request.args.get('campaign_id', type=str)
-    mode = request.args.get('mode', type=str, default=None)
     time_slot = request.args.get('time_slot', type=str, default=None)
     group_id = request.args.get('group_id', type=str, default=None)
+    h3_cell = request.args.get('h3_cell', type=str)
     target_resolution = request.args.get('target_resolution', type=int, default=8)
-    color_by_avg = request.args.get('color_by_avg', type=str, default='true').lower() == 'true'
+    is_departure = request.args.get('is_departure', type=str).lower() == 'true'
     min_tracks = request.args.get('min_tracks', type=int, default=5)
-    json = get_duck_avg_duration_geo(territory_id, campaign_id, mode, time_slot, group_id, target_resolution, color_by_avg, min_tracks)
+    json = get_duck_avg_duration_geo(territory_id, campaign_id, time_slot, group_id, h3_cell, 
+                                     target_resolution, is_departure, min_tracks)
     return json
 
 

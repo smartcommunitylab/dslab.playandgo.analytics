@@ -65,7 +65,16 @@
         <label>Utenti minimi:
             <input type="number" id="min_tracks" value="5" min="1" max="25" style="width:60px;">
         </label>
-        <label>Destinazione: <input type="text" id="h3_destination" value="871f99813ffffff"></label>
+        <br>
+        <label>Cella: <input type="text" id="h3_cell" value="871f99813ffffff"></label>
+        <label style="margin-left:6px;">
+            Tipo:
+            <select id="is_departure">
+                <option value="true" selected>Partenza</option>
+                <option value="false">Destinazione</option>
+            </select>
+        </label>
+
         <!-- Pulsante Load più visibile con icona -->
         <button id="btn-load" class="btn-load" onclick="loadGeoJson()" title="Carica dati H3">
             <!-- semplice icona SVG di caricamento/map -->
@@ -116,7 +125,8 @@
             var time_slot = document.getElementById('time_slot').value;
             var group_id = document.getElementById('group_id').value;
             var min_tracks = document.getElementById('min_tracks').value;
-            var h3_destination = document.getElementById('h3_destination').value;
+            var h3_cell = document.getElementById('h3_cell').value;
+            var is_departure = document.getElementById('is_departure').value === 'true';
 
             // Base URL con param obbligatori
             var params = [];
@@ -124,7 +134,8 @@
             params.push("campaign_id=" + encodeURIComponent(campaign_id));
             params.push("target_resolution=" + encodeURIComponent(target_resolution));
             params.push("min_tracks=" + encodeURIComponent(min_tracks));
-            params.push("h3_destination=" + encodeURIComponent(h3_destination));
+            params.push("h3_cell=" + encodeURIComponent(h3_cell));
+            params.push("is_departure=" + encodeURIComponent(is_departure));
 
             // Aggiungi mode e time_slot solo se non stringhe vuote
             if (mode && mode !== "") {
@@ -174,10 +185,17 @@
                                 weight: 1,
                                 fillOpacity: 0.7
                             };
-                            // evidenzia destinazione (se condizione già presente)
-                            if (props.h3_start_parent == h3_destination) {
-                                style.color = '#ff0000';
-                                style.weight = 3;
+                            // evidenzia partenza/destinazione (se condizione già presente)
+                            if (is_departure) {
+                                if (props.h3_end_parent == h3_cell) {
+                                    style.color = '#ff0000';
+                                    style.weight = 3;
+                                }
+                            } else {
+                                if (props.h3_start_parent == h3_cell) {
+                                    style.color = '#ff0000';
+                                    style.weight = 3;
+                                }
                             }
                             return style;
                         },

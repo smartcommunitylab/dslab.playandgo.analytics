@@ -67,8 +67,8 @@ def get_duck_trips(campaign_id:str, mode:str, time_slot:str, group_id:str, targe
     return df_agg
 
 
-def get_duck_user_departure(campaign_id:str, mode:str, time_slot:str, group_id:str, h3_destination:str,
-                             target_resolution:int, duck_engine: DuckEngine) -> pd.DataFrame:
+def get_duck_user_departure(campaign_id:str, mode:str, time_slot:str, group_id:str, h3_cell:str,
+                             target_resolution:int, is_departure:bool, duck_engine: DuckEngine) -> pd.DataFrame:
     query = f"""
         SELECT player_id, track_id, h3_start, h3_end FROM track_info
         WHERE track_info.campaign_id='{campaign_id}'""" 
@@ -86,9 +86,16 @@ def get_duck_user_departure(campaign_id:str, mode:str, time_slot:str, group_id:s
     # Riporta i valori h3 alla risoluzione target usando il parent H3
     df_h3['h3_start_parent'] = df_h3['h3_start'].apply(lambda x: h3.cell_to_parent(x, target_resolution))
     df_h3['h3_end_parent'] = df_h3['h3_end'].apply(lambda x: h3.cell_to_parent(x, target_resolution))
-    # Filtra per h3_end_parent uguale a h3_destination
-    df_filtered = df_h3[df_h3['h3_end_parent'] == h3_destination]
-    # Raggruppa per h3_start_parent e conta gli utenti unici
-    df_departure_counts = df_filtered.groupby('h3_start_parent', as_index=False).agg(
-        unique_users=('player_id', 'nunique'))
+    # Filtra per cella di arrivo o partenza
+    if is_departure:
+        df_filtered = df_h3[df_h3['h3_start_parent'] == h3_cell]
+        # Raggruppa per cella h3 e conta gli utenti unici
+        df_departure_counts = df_filtered.groupby('h3_end_parent', as_index=False).agg(
+            unique_users=('player_id', 'nunique'))
+    else:
+        df_filtered = df_h3[df_h3['h3_end_parent'] == h3_cell]
+        # Raggruppa per cella h3 e conta gli utenti unici
+        df_departure_counts = df_filtered.groupby('h3_start_parent', as_index=False).agg(
+            unique_users=('player_id', 'nunique'))
     return df_departure_counts
+

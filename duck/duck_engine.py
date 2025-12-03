@@ -35,6 +35,7 @@ class DuckEngine:
         #self.conn.execute("CALL start_ui();")
         self.table_nearest_edges = "nearest_edges"
         self.table_track_info = "track_info"
+        self.table_trip_info = "trip_info"
 
 
     def execute_query(self, query):
@@ -192,7 +193,47 @@ class DuckEngine:
             ]
         )
 
-        return df_duck_nearest_edges, df_duck_tracks_info
+        # --- aggregazione per multimodal_id ---
+        # ottiene per ogni multimodal_id:
+        # - campaign_id, player_id, group_id, multimodal_id (presa dalla prima riga)
+        # - start_time dalla traccia con start_time minimo
+        # - end_time dalla traccia con start_time massimo
+        # - duration e distance sommate
+        # - time_slot preso dalla riga di inizio (earliest)
+        # - h3_start dalla riga di inizio, h3_end dalla riga di fine
+        if not df_duck_tracks_info.empty:
+            # assicura ordine per estrarre first/last corretti
+            df_sorted = df_duck_tracks_info.sort_values(['multimodal_id', 'start_time'])
+
+            first_rows = df_sorted.groupby('multimodal_id', as_index=False).first()[[
+                'multimodal_id', 'campaign_id', 'campaign_type', 'player_id', 'group_id', 'start_time', 'time_slot', 'h3_start'
+            ]]
+            last_rows = df_sorted.groupby('multimodal_id', as_index=False).last()[[
+                'multimodal_id', 'end_time', 'h3_end'
+            ]]
+            sums = df_sorted.groupby('multimodal_id', as_index=False).agg({
+                'duration': 'sum',
+                'distance': 'sum'
+            })
+
+            df_duck_multimodal = first_rows.merge(last_rows, on='multimodal_id', how='left')\
+                                      .merge(sums, on='multimodal_id', how='left')
+
+            # riordina colonne come richiesto
+            #df_duck_multimodal = df_duck_multimodal[{
+            #    'campaign_id', 'player_id', 'group_id', 'multimodal_id',
+            #    'start_time', 'end_time', 'duration', 'distance', 'time_slot',
+            #    'h3_start', 'h3_end'
+            #}]
+        else:
+            df_duck_multimodal = pd.DataFrame(columns=[
+                'campaign_id', 'campaign_type', 'player_id', 'group_id', 'multimodal_id',
+                'start_time', 'end_time', 'duration', 'distance', 'time_slot',
+                'h3_start', 'h3_end'
+            ])
+        # --- fine aggregazione ---
+
+        return df_duck_nearest_edges, df_duck_tracks_info, df_duck_multimodal
 
 
 

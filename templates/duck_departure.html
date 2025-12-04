@@ -44,15 +44,6 @@
         <label>Campagna: <input type="text" id="campaign_id" value="L.personal"></label>
         <label>Gruppo: <input type="text" id="group_id" value=""></label>
         <label>Risoluzione: <input type="number" id="target_resolution" value="7" min="5" max="10"></label>
-        <label>Modalità:
-            <select id="mode">
-                <option value="">All</option>
-                <option value="walk">Walk</option>
-                <option value="bike">Bike</option>
-                <option value="bus">Bus</option>
-                <option value="train">Train</option>
-            </select>
-        </label>
         <label>Fascia oraria:
             <select id="time_slot">
                 <option value="">Tutti</option>
@@ -121,7 +112,6 @@
             var territory_id = document.getElementById('territory_id').value;
             var campaign_id = document.getElementById('campaign_id').value;
             var target_resolution = document.getElementById('target_resolution').value;
-            var mode = document.getElementById('mode').value;
             var time_slot = document.getElementById('time_slot').value;
             var group_id = document.getElementById('group_id').value;
             var min_tracks = document.getElementById('min_tracks').value;
@@ -137,10 +127,7 @@
             params.push("h3_cell=" + encodeURIComponent(h3_cell));
             params.push("is_departure=" + encodeURIComponent(is_departure));
 
-            // Aggiungi mode e time_slot solo se non stringhe vuote
-            if (mode && mode !== "") {
-                params.push("mode=" + encodeURIComponent(mode));
-            }
+            // Aggiungi group_id e time_slot solo se non stringhe vuote
             if (time_slot && time_slot !== "") {
                 params.push("time_slot=" + encodeURIComponent(time_slot));
             }

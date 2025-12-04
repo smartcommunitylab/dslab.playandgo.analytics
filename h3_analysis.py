@@ -72,20 +72,18 @@ def get_duck_trips(campaign_id:str, mode:str, time_slot:str, group_id:str, targe
     return df_agg
 
 
-def get_duck_user_departure(campaign_id:str, mode:str, time_slot:str, group_id:str, h3_cell:str,
+def get_duck_user_departure(campaign_id:str, time_slot:str, group_id:str, h3_cell:str,
                              target_resolution:int, is_departure:bool, duck_engine: DuckEngine) -> pd.DataFrame:
     query = f"""
-        SELECT player_id, track_id, h3_start, h3_end FROM track_info
-        WHERE track_info.campaign_id='{campaign_id}'""" 
-    if mode is not None:    
-        query = query + f" AND track_info.mode='{mode}'"
+        SELECT player_id, multimodal_id, h3_start, h3_end FROM trip_info
+        WHERE trip_info.campaign_id='{campaign_id}'""" 
     if time_slot is not None:
-        query = query + f" AND track_info.time_slot='{time_slot}'"
+        query = query + f" AND trip_info.time_slot='{time_slot}'"
     if group_id is not None:
-        query = query + f" AND track_info.group_id='{group_id}'"
+        query = query + f" AND trip_info.group_id='{group_id}'"
     results = duck_engine.execute_query(query)
     # Crea un DataFrame dai risultati
-    df_h3 = pd.DataFrame(results, columns=['player_id', 'track_id', 'h3_start', 'h3_end'])
+    df_h3 = pd.DataFrame(results, columns=['player_id', 'multimodal_id', 'h3_start', 'h3_end'])
     # Elimina le righe con valori nulli in h3_start o h3_end
     df_h3 = df_h3.dropna(subset=['h3_start', 'h3_end'])
     # Riporta i valori h3 alla risoluzione target usando il parent H3

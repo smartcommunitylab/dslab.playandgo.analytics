@@ -54,10 +54,10 @@ def get_duck_trips_geo(territory_id:str, campaign_id:str, mode:str, time_slot:st
     return h3_gdf.to_json()
 
 
-def get_duck_departure_geo(territory_id:str, campaign_id:str, mode:str, time_slot:str, group_id:str, 
+def get_duck_departure_geo(territory_id:str, campaign_id:str, time_slot:str, group_id:str, 
                            h3_cell:str, target_resolution:int, is_departure:bool, min_tracks:int=5) -> str:
     duck_engine = DuckEngine(territory_id, campaign_id, True)
-    df_agg = get_duck_user_departure(campaign_id, mode, time_slot, group_id, h3_cell, target_resolution, is_departure, duck_engine)
+    df_agg = get_duck_user_departure(campaign_id, time_slot, group_id, h3_cell, target_resolution, is_departure, duck_engine)
     duck_engine.close()
     
     # Toglie le celle H3 che hanno meno di x tracce distinte
@@ -108,14 +108,13 @@ def api_get_duck_trips_geo():
 def api_get_duck_departures_geo():
     territory_id = request.args.get('territory_id', type=str)
     campaign_id = request.args.get('campaign_id', type=str)
-    mode = request.args.get('mode', type=str, default=None)
     time_slot = request.args.get('time_slot', type=str, default=None)
     group_id = request.args.get('group_id', type=str, default=None)
     target_resolution = request.args.get('target_resolution', type=int, default=8)
     h3_cell = request.args.get('h3_cell', type=str)
     is_departure = request.args.get('is_departure', type=str).lower() == 'true'
     min_tracks = request.args.get('min_tracks', type=int, default=5)
-    json = get_duck_departure_geo(territory_id, campaign_id, mode, time_slot, group_id, 
+    json = get_duck_departure_geo(territory_id, campaign_id, time_slot, group_id, 
                                   h3_cell, target_resolution, is_departure, min_tracks)
     return json
 

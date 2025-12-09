@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 h3_level = 10
 
-def import_duckdb_data(territory_id:str, filter_campaign_id:str=None, skip_personal:bool=True):
+def import_duckdb_data(territory_id:str, filter_campaign_id:str=None):
     storage_engine = FileStorage()
     size, df_campaigns = storage_engine.load_dataframe(territory_id, storage_engine.campaigns)
     for _, row in df_campaigns.iterrows():
@@ -15,9 +15,8 @@ def import_duckdb_data(territory_id:str, filter_campaign_id:str=None, skip_perso
         if filter_campaign_id is not None:
             if campaign_id != filter_campaign_id:
                 continue
-        if(skip_personal and row['type'] == "personal"):
+        if(row['type'] == "personal"):
             continue
-        # TODO years slice for personal campaigns
         years = []
         start_year = row['date_from'].year
         end_year = row['date_to'].year

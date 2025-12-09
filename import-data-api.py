@@ -107,8 +107,7 @@ def api_import_duckdb_data():
     start = datetime.now()
     territory_id = request.args.get('territory_id', type=str)
     filter_campaign_id = request.args.get('filter_campaign_id', default=None, type=str)
-    skip_personal = request.args.get('skip_personal', default=True, type=bool)
-    import_duckdb_data(territory_id, filter_campaign_id, skip_personal)
+    import_duckdb_data(territory_id, filter_campaign_id)
     stop = datetime.now()
     print(f"api_import_duckdb_data Territory ID: {territory_id}, Time:{(stop - start).total_seconds()} seconds")
     return {"status": "completed"}

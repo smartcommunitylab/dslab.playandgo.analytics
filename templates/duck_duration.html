@@ -124,8 +124,7 @@
                     const minVal = vals.length ? Math.min(...vals) : 0;
                     const maxVal = vals.length ? Math.max(...vals) : 0;
 
-                    // più scuro per valori piccoli, più chiaro per valori grandi
-                    colorScale = chroma.scale('YlOrRd').domain([minVal, maxVal]);
+                    colorScale = chroma.scale('YlOrRd').domain([minVal, maxVal]).classes(chroma.limits(vals, 'q', 10));
 
                     if (geoJsonLayer) map.removeLayer(geoJsonLayer);
                     geoJsonLayer = L.geoJSON(data, {
@@ -137,7 +136,7 @@
                                 color: '#000000',
                                 fillColor: fill,
                                 weight: 1,
-                                fillOpacity: 0.6
+                                fillOpacity: 0.75
                             };
                             // evidenzia partenza/destinazione (se condizione già presente)
                             if (is_departure) {

@@ -99,6 +99,27 @@ class PlayAndGoEngine:
         self.hsc_direct_connection = eval(os.getenv("PG_HSC_MONGO_DIRECT_CONNECTION", "False"))
 
 
+    def get_territories(self):
+        # Connessione al server MongoDB (modifica la stringa di connessione se necessario)
+        client = MongoClient(self.mongo_uri, directConnection=self.direct_connection)
+
+        # Seleziona il database
+        db = client[self.mongo_db]
+
+        # Seleziona la collection
+        collection = db["territories"]
+
+        # Ottieni un cursore per tutti i documenti della collection
+        cursor = collection.find({})
+        # Restituisce la lista delle campagne
+        territories = []
+        for territory in cursor:
+            territories.append(territory)
+        cursor.close()
+        client.close()  
+        return territories
+    
+    
     def get_campaigns(self, territory_id: str):
         # Connessione al server MongoDB (modifica la stringa di connessione se necessario)
         client = MongoClient(self.mongo_uri, directConnection=self.direct_connection)
@@ -240,6 +261,9 @@ class PlayAndGoEngine:
             elif campaign["type"] == "school":
                 for c_group in self.get_hsc_group_info(territory_id, str(campaign["_id"])):
                     yield c_group
+            elif campaign["type"] == "group":
+                for c_group in self.get_group_campaign_info(territory_id, str(campaign["_id"])):
+                    yield c_group
             elif (campaign["type"] == "personal") or (campaign["type"] == "city"):
                 for c_group in self.get_basic_campaign_info(territory_id, str(campaign["_id"])):
                     yield c_group
@@ -259,7 +283,7 @@ class PlayAndGoEngine:
         collection = db["campaignSubscriptions"]
 
         # Ottieni il documento specifico per campaign_id
-        sub_cursor = collection.find({"territoryId": territory_id, "campaignSubscriptions": campaign_id})
+        sub_cursor = collection.find({"territoryId": territory_id, "campaignId": campaign_id})
         for sub in sub_cursor:
             c_group = CampaignGroup(
                 territory_id=territory_id,
@@ -350,6 +374,36 @@ class PlayAndGoEngine:
         client.close()
 
 
+    def get_group_campaign_info(self, territory_id: str, campaign_id: str):
+        client = MongoClient(self.mongo_uri, directConnection=self.direct_connection)
+        db = client[self.mongo_db]
+        # Connessione al server MongoDB (modifica la stringa di connessione se necessario)
+        client = MongoClient(self.mongo_uri, directConnection=self.direct_connection)
+
+        # Seleziona il database
+        db = client[self.mongo_db]
+
+        # Seleziona la collection
+        collection = db["campaignSubscriptions"]
+
+        # Ottieni il documento specifico per campaign_id
+        sub_cursor = collection.find({"territoryId": territory_id, "campaignId": campaign_id})
+        for sub in sub_cursor:
+            if sub['campaignData'] is not None and 'groupId' in sub['campaignData']:
+                group_id = sub['campaignData']['groupId']
+            else:                
+                group_id = "-1"
+            c_group = CampaignGroup(
+                territory_id=territory_id,
+                player_id=sub["playerId"],
+                campaign_id=campaign_id,
+                group_id=group_id 
+            )
+            yield c_group
+        sub_cursor.close()
+        client.close()
+
+
     def get_campaign_tracks_info(self, territory_id: str, start_time: str, end_time: str = None):
         # Connessione al server MongoDB (modifica la stringa di connessione se necessario)
         client = MongoClient(self.mongo_uri, directConnection=self.direct_connection)
@@ -360,15 +414,9 @@ class PlayAndGoEngine:
         campaign_collection = db["campaigns"]
         campaign_cursor = campaign_collection.find({"territoryId":territory_id})
         for campaign in campaign_cursor:
-            if campaign["type"] != "company" and campaign["type"] != "school":
-                continue
             if campaign["type"] == "company":
                 for c_group in self.get_company_tracks_info(territory_id, str(campaign["_id"]), start_time, end_time):
                     yield c_group    
-            elif campaign["type"] == "school":
-                continue
-                #for c_group in self.get_hsc_group_info(territory_id, str(campaign["_id"])):
-                #    yield c_group
         campaign_cursor.close()
 
         client.close()

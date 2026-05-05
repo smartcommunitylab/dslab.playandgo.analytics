@@ -21,8 +21,18 @@ def get_utc_datetime(dt):
     return dt
 
 
+def get_territories():
+    playandgo_engine = PlayAndGoEngine()
+    return playandgo_engine.get_territories()
+
+
+def get_campaigns(territory_id:str):
+    playandgo_engine = PlayAndGoEngine()
+    return playandgo_engine.get_campaigns(territory_id) 
+
+
 def import_campaigns_data(territory_id:str, save_csv=False):
-    logger.info(f"import_campaigns_data")
+    logger.info(f"import_campaigns_data for territory: {territory_id}")
     # Inizializza gli engine
     playandgo_engine = PlayAndGoEngine()
     file_storage = FileStorage()
@@ -89,21 +99,21 @@ def extract_track_data_osm(territory_id, track, ls_tracks, ls_tracks_info, df_wa
         lon_array =[]
         lat_array =[]
         for index, trace_info in enumerate(trace_route.trace_infos):
-            try:
-                # check way shape
-                if not trace_info.way_id in df_way_shapes['way_id'].values:
-                    try:
-                        edge_info = valhalla_engine.find_nearest_edges_by_osm_way(track, trace_info.way_id, 
-                                                                                trace_info.lon, trace_info.lat)
-                        if edge_info is not None:
-                            if df_way_shapes.empty:
-                                df_way_shapes.loc[0] = [edge_info.way_id, edge_info.shape]
-                            else:
-                                df_way_shapes.loc[df_way_shapes.index.max() + 1] = [edge_info.way_id, edge_info.shape]
-                    except Exception as e1:
-                        logger.warning(f"Error processing edge_info: {trace_info}, Error: {e1}")
-            except Exception as e2:
-                logger.warning(f"Error processing trace_info: {trace_info}, Error: {e2}")
+            # try:
+            #     # check way shape
+            #     if not trace_info.way_id in df_way_shapes['way_id'].values:
+            #         try:
+            #             edge_info = valhalla_engine.find_nearest_edges_by_osm_way(track, trace_info.way_id, 
+            #                                                                     trace_info.lon, trace_info.lat)
+            #             if edge_info is not None:
+            #                 if df_way_shapes.empty:
+            #                     df_way_shapes.loc[0] = [edge_info.way_id, edge_info.shape]
+            #                 else:
+            #                     df_way_shapes.loc[df_way_shapes.index.max() + 1] = [edge_info.way_id, edge_info.shape]
+            #         except Exception as e1:
+            #             logger.warning(f"Error processing edge_info: {trace_info}, Error: {e1}")
+            # except Exception as e2:
+            #     logger.warning(f"Error processing trace_info: {trace_info}, Error: {e2}")
 
             lon_array.append(trace_info.lon)
             lat_array.append(trace_info.lat)

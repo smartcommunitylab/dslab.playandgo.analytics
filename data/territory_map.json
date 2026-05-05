@@ -6,5 +6,9 @@
     "L": {
         "bbox": [9.25, 45.75, 9.50, 45.95], 
         "file": "data/osm/lecco.osm.pbf"
-    }
+    },
+    "TN": {
+        "bbox": [11.00, 46.00, 11.25, 46.10], 
+        "file": "data/osm/trento.osm.pbf"
+    },
 }

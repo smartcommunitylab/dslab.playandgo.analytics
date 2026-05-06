@@ -23,6 +23,8 @@ class DuckEngine:
         self.store_path = os.getenv("STORAGE_PATH", "./files/")
         if self.store_path.endswith("/") or self.store_path.endswith("\\"):
             self.store_path = self.store_path[:-1]
+
+        self.check_directory(territory_id)
         if campaign_id is not None:
             self.database_path = Path(f"{self.store_path}/{territory_id}/campaigns/{campaign_id}_database.duckdb").absolute()
         else:
@@ -36,6 +38,13 @@ class DuckEngine:
         self.table_nearest_edges = "nearest_edges"
         self.table_track_info = "track_info"
         self.table_trip_info = "trip_info"
+
+
+    def check_directory(self, territory_id:str):
+        """Check if the directory exists."""
+        directory_path = f"{self.store_path}/{territory_id}/campaigns"
+        if not os.path.exists(directory_path):
+            os.makedirs(directory_path)
 
 
     def execute_query(self, query):

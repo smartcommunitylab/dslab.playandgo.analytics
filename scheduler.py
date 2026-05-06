@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-import os
+import pytz
 import logging
 import argparse 
 
@@ -12,8 +12,8 @@ from config_manager import get_time_range_for_territory, add_or_update_time_rang
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s - %(name)s: %(message)s')
 
 # Valori di default qualora non trovati nel file di configurazione
-DEFAULT_START_TIME = "2026-05-01T00:00:00+00:00"
-DEFAULT_END_TIME = "2026-12-31T23:59:59+00:00"
+DEFAULT_START_TIME = "2026-01-01T00:00:00+00:00"
+DEFAULT_END_TIME = "2026-05-31T23:59:59+00:00"
 
 
 def import_campaign_data_for_territory(territory, period: int):
@@ -56,14 +56,15 @@ def import_campaign_data_for_territory(territory, period: int):
     for campaign in get_campaigns(territory_id):
         campaign_id = str(campaign['_id'])
         
-        start_campaign = get_utc_datetime(campaign['dateFrom'])
-        end_campaign = get_utc_datetime(campaign['dateTo'])
-
+        if campaign["type"] == "personal":
+            logging.info(f"Skipping personal campaign '{campaign_id}'")
+            continue
+        
         # if campaign is not personal, check if start_time is between the campaign date
-        if campaign["type"] != "personal":
-            if start_time_dt > end_campaign:
-                logging.info(f"Campaign '{campaign_id}' is outside the time range.")
-                continue
+        end_campaign = get_utc_datetime(campaign['dateTo'])
+        if start_time_dt > end_campaign:
+            logging.info(f"Campaign '{campaign_id}' is outside the time range.")
+            continue
 
         # check campaign type
         set_group_id = False
@@ -75,9 +76,9 @@ def import_campaign_data_for_territory(territory, period: int):
         import_duckdb_data(territory_id, campaign_id)
 
     # incrementa il time range del territorio con il periodo
-    new_start_time = datetime.toisoformat(end_time_df) 
+    new_start_time = end_time_df.astimezone(pytz.utc).isoformat()
     # add period in seconds to ned_time_df
-    new_end_time = datetime.toisoformat(end_time_df + timedelta(seconds=period))
+    new_end_time = (end_time_df + timedelta(seconds=period)).astimezone(pytz.utc).isoformat()
     add_or_update_time_range(territory_id, new_start_time, new_end_time)
      
 

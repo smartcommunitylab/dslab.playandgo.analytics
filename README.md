@@ -52,9 +52,7 @@ The following parameters are allowed:
 - `--period` : a mandatory parameter; it define the period in seconds that will be added for the next scheduled run.
 - `--territories` : an optional list of territory ids; if present only that territories will be updated, otherwise all the territories are considered. 
 
-The env variable `STORAGE_PATH` must be set to the directory where the component store all the files.
-
-In that folder the component can read (o write after the first execution) a json file `territories_time_ranges.json` that can specify, for every territory, a specific period for extract new data.
+The component can read (o write after the first execution) a json file `territories_time_ranges.json` that can specify, for every territory, a specific period for extract new data.
 The json file has the following format:
 ```json
 [
@@ -65,6 +63,24 @@ The json file has the following format:
   }
 ]
 ```
+List of env variables used by the component:
+- `STORAGE_PATH` : the directory where the component store all the files and the configuration file `territories_time_ranges.json`
+- `PG_MONGO_URI` : Play&Go Mongo connection uri
+- `PG_MONGO_DB` : Play&Go db name
+- `PG_MONGO_DIRECT_CONNECTION` : True for local connection, otherwise False
+- `PG_COMPANY_MONGO_URI` : Play&Go Company Mongo connection uri
+- `PG_COMPANY_MONGO_DB` : Play&Go Company db name
+- `PG_COMPANY_MONGO_DIRECT_CONNECTION` : True for local connection, otherwise False
+- `PG_HSC_MONGO_URI` : Play&Go HSC Mongo connection uri
+- `PG_HSC_MONGO_DB` : Play&Go HSC db name
+- `PG_HSC_MONGO_DIRECT_CONNECTION` : True for local connection, otherwise False
+- `VALHALLA_URI` : Valhalla server uri 
 
 ## Analytics API
 This component expose some REST API 
+```sh
+python analytics-api.py
+```
+List of env variables used by the component:
+- `STORAGE_PATH` : the directory where the component store all the files and the configuration file `territories_time_ranges.json`
+- `SERVER_PORT` : listening port

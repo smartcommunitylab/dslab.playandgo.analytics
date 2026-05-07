@@ -67,14 +67,16 @@ List of env variables used by the component:
 - `STORAGE_PATH` : the directory where the component store all the files and the configuration file `territories_time_ranges.json`
 - `PG_MONGO_URI` : Play&Go Mongo connection uri
 - `PG_MONGO_DB` : Play&Go db name
-- `PG_MONGO_DIRECT_CONNECTION` : True for local connection, otherwise False
+- `PG_MONGO_DIRECT_CONNECTION` : True for local connection, otherwise False (default False)
 - `PG_COMPANY_MONGO_URI` : Play&Go Company Mongo connection uri
 - `PG_COMPANY_MONGO_DB` : Play&Go Company db name
-- `PG_COMPANY_MONGO_DIRECT_CONNECTION` : True for local connection, otherwise False
+- `PG_COMPANY_MONGO_DIRECT_CONNECTION` : True for local connection, otherwise False (default False)
 - `PG_HSC_MONGO_URI` : Play&Go HSC Mongo connection uri
 - `PG_HSC_MONGO_DB` : Play&Go HSC db name
-- `PG_HSC_MONGO_DIRECT_CONNECTION` : True for local connection, otherwise False
+- `PG_HSC_MONGO_DIRECT_CONNECTION` : True for local connection, otherwise False (default False)
 - `VALHALLA_URI` : Valhalla server uri 
+- `START_TIME` : default start time if no entry for that territory is present in conf file, default `2026-05-01T00:00:00+00:00`
+- `END_TIME` : default start time if no entry for that territory is present in conf file, default `2026-05-31T23:59:59+00:00`
 
 ## Analytics API
 This component expose some REST API 

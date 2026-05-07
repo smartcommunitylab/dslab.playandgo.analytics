@@ -1,7 +1,8 @@
-from datetime import datetime, timedelta
+import os
 import pytz
 import logging
 import argparse 
+from datetime import datetime, timedelta
 
 from import_tracks_data import import_campaign_tracks_data, import_campaign_groups_data, import_nearest_edges_by_trace 
 from import_tracks_data import merge_campaign_tracks_groups, import_campaigns_data
@@ -11,9 +12,8 @@ from config_manager import get_time_range_for_territory, add_or_update_time_rang
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s - %(name)s: %(message)s')
 
-# Valori di default qualora non trovati nel file di configurazione
-DEFAULT_START_TIME = "2026-01-01T00:00:00+00:00"
-DEFAULT_END_TIME = "2026-05-31T23:59:59+00:00"
+DEFAULT_START_TIME = os.getenv("START_TIME", "2026-05-01T00:00:00+00:00")
+DEFAULT_END_TIME = os.getenv("END_TIME", "2026-05-31T23:59:59+00:00")
 
 
 def import_campaign_data_for_territory(territory, period: int):

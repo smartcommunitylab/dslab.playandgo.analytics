@@ -1,4 +1,3 @@
-import pyrosm 
 import osmnx as ox
 
 import json
@@ -70,20 +69,6 @@ class GraphMap:
                 return "drive"
             case _:
                 raise ValueError(f"Unknown mode type: {mode_type}")
-
-
-    def load_graph(self, territory_id: str, mode_type: str):
-        network_type = self.get_network_type(mode_type)
-        osm_file = self.get_osm_file(territory_id)
-        if not osm_file:
-            raise ValueError(f"No OSM file found for territory ID: {territory_id}")
-        logger.info(f"Start loading Graph - Territory ID: {territory_id}, Mode: {mode_type}")
-        start = datetime.now()
-        osm = pyrosm.OSM(osm_file)
-        nodes, edges = osm.get_network(nodes=True, network_type=network_type)
-        self.G = osm.to_graph(nodes, edges, graph_type="networkx")
-        stop = datetime.now()
-        logger.info(f"Graph loaded - Territory ID: {territory_id}, Mode: {mode_type}, Time:{(stop - start).total_seconds()} seconds")
 
 
     def load_graph_from_bbox(self, territory_id: str, mode_type: str):

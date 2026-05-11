@@ -269,6 +269,7 @@ class FileStorage:
     
 
     def save_df(self, territory_id:str, df_file:str, df:pd.DataFrame, year:str=None, save_csv:bool=False):
+        self.check_directory(territory_id)
         file_path = self.get_filename(territory_id, df_file, year)
         df.to_parquet(file_path, engine="pyarrow") 
         if save_csv:

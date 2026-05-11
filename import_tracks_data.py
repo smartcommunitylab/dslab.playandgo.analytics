@@ -17,6 +17,8 @@ logger = logging.getLogger(__name__)
 h3_res = 13  # H3 resolution level
 
 def get_utc_datetime(dt):
+    if dt is None:
+        return None
     dt = dt.replace(tzinfo=timezone.utc) if dt.tzinfo is None else dt
     return dt
 

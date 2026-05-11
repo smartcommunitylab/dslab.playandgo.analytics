@@ -61,7 +61,7 @@ def import_campaign_data_for_territory(territory, period: int):
             continue
         
         # if campaign is not personal, check if start_time is between the campaign date
-        end_campaign = get_utc_datetime(campaign['dateTo'])
+        end_campaign = get_utc_datetime(campaign['dateTo']) + timedelta(days=7) # add 7 days to campaign end date to consider also the tracks of the campaign
         if start_time_dt > end_campaign:
             logging.info(f"Campaign '{campaign_id}' is outside the time range.")
             continue

@@ -26,6 +26,7 @@ def import_duckdb_data(territory_id:str, filter_campaign_id:str=None):
             if year_str not in years:
                 years.append(year_str)
 
+        logging.info(f"import_duckdb_data for territory '{territory_id}' and years {years}.")
         df_total_edges = storage_engine.load_multiple_dataframes(territory_id, storage_engine.nearest_edges, years)
         df_campaign_tracks = storage_engine.load_multiple_dataframes(territory_id, storage_engine.mapped_campaign_groups, years)
         duck_engine = DuckEngine(territory_id, campaign_id, False)
@@ -35,3 +36,4 @@ def import_duckdb_data(territory_id:str, filter_campaign_id:str=None):
         duck_engine.import_dataframe(duck_engine.table_track_info, df_duck_tracks_info)
         duck_engine.import_dataframe(duck_engine.table_trip_info, df_duck_multimodal)
         duck_engine.close()
+        logging.info(f"import_duckdb_data for territory '{territory_id}' and years {years}. done")

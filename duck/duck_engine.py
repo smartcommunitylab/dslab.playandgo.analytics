@@ -151,7 +151,7 @@ class DuckEngine:
 
     def convert_campaign_data(self, campaign_id:str, h3_level:int, df_tracks_info:pd.DataFrame, df_nearest_edges:pd.DataFrame) -> pd.DataFrame:
         if (df_tracks_info is None) or (df_nearest_edges is None):
-            return None, None
+            return None, None, None
         # from df_tracks_info get all track_id that belong to the campaign_id
         df_tracks_info = df_tracks_info[df_tracks_info['campaign_id'] == campaign_id]
         # from df_duck_nearest_edges get all rows that belong to the track_id in df_tracks_info

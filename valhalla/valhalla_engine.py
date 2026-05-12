@@ -224,7 +224,10 @@ class ValhallaEngine:
                     trace_route.shape = data_trace["shape"]
                     trace_infos = []
                     data_edges = data_trace["edges"]
-                    for index, matched_point in enumerate(data_trace["matched_points"]):
+                    matched_points = []
+                    if "matched_points" in data_trace:
+                        matched_points = data_trace["matched_points"]
+                    for index, matched_point in enumerate(matched_points):
                         if matched_point["type"] == "matched":
                             edge_index = matched_point["edge_index"]
                             if edge_index >= len(data_edges):

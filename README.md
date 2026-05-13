@@ -45,7 +45,7 @@ Analytics logics are provided, querying the DuckDB file for filtering data, and 
 ## Scheduler 
 This component should be invocked periodically in order to import new data from the Play&Go dbs and update the Parquet files, and also updating the DuckDb files.
 ```sh
-python scheduler.py --period 3600 --territories TAA TEST
+python scheduler.py --period 2592000 --territories TAA TEST
 ```
 The following parameters are allowed:
 - `--period` : a mandatory parameter; it define the period in seconds that will be added for the next scheduled run.

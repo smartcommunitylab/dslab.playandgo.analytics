@@ -15,6 +15,7 @@ class GraphMap:
         self.net_driving = 'driving'     
         self.net_service = 'driving+service' 
         self.net_all = 'all'
+        self.G = None
     
 
     def get_osm_file(self, territory_id: str):
@@ -29,8 +30,10 @@ class GraphMap:
         file_path = "data/territory_map.json"
         if os.path.exists(file_path):
             with open(file_path, "r", encoding="utf-8") as file:
-                territory_map = json.load(file)  
-                return territory_map.get(territory_id.upper(), None).get("bbox", None)            
+                territory_map = json.load(file)
+                if territory_id.upper() in territory_map:  
+                    return territory_map.get(territory_id.upper(), None).get("bbox", None)
+        return None            
 
 
     def get_network_type(self, mode_type: str):
@@ -77,10 +80,11 @@ class GraphMap:
         logger.info(f"Start loading Graph BBOX - Territory ID: {territory_id}, Mode: {mode_type}")
         start = datetime.now()
         bbox = self.get_bbox(territory_id)
-        ox.settings.use_cache = False
-        self.G = ox.graph.graph_from_bbox(bbox, network_type=network_type)
-        stop = datetime.now()
-        logger.info(f"Graph loaded from BBOX - Territory ID: {territory_id}, Mode: {mode_type}, Time:{(stop - start).total_seconds()} seconds")
+        if bbox is not None:
+            ox.settings.use_cache = False
+            self.G = ox.graph.graph_from_bbox(bbox, network_type=network_type)
+            stop = datetime.now()
+            logger.info(f"Graph loaded from BBOX - Territory ID: {territory_id}, Mode: {mode_type}, Time:{(stop - start).total_seconds()} seconds")
 
 
     def find_nearest_nodes(self, lon_array, lat_array, track_id):

@@ -170,7 +170,6 @@ def import_nearest_edges_by_trace(territory_id, start_time, track_modes, end_tim
     playandgo_engine = PlayAndGoEngine()
     valhalla_engine = ValhallaEngine()
     file_storage = FileStorage()
-    graph_map = GraphMap()
 
     dim = 0
     try:
@@ -192,15 +191,16 @@ def import_nearest_edges_by_trace(territory_id, start_time, track_modes, end_tim
 
     for track_mode in track_modes:
         logger.info(f"Processing mode: {track_mode}")
+        graph_map = GraphMap()
         if track_mode != "train":
             try:
                 graph_map.load_graph_from_bbox(territory_id, track_mode)
             except ValueError as e:
                 logger.info(f"Error loading graph for territory {territory_id} with mode {track_mode}: {e}")
-                continue
 
-            count = 0
-            for track in playandgo_engine.get_tracks(territory_id, start_time, end_time, track_mode):
+        count = 0
+        for track in playandgo_engine.get_tracks(territory_id, start_time, end_time, track_mode):
+            if (track_mode != "train") and (graph_map.G is not None):
                 try:
                     extract_track_data_osm(territory_id, track, ls_tracks, ls_tracks_info, df_way_shapes, ls_nearest_edges, valhalla_engine, graph_map)
                     logger.info(f"Track {track_mode} {count} processed.")
@@ -208,14 +208,10 @@ def import_nearest_edges_by_trace(territory_id, start_time, track_modes, end_tim
                     logger.warning(f"Error processing track {track_mode} {count}: {e}")
                     extract_track_data_h3(track, ls_tracks_info, ls_nearest_edges)
                 count += 1
-
-        else:
-            count = 0
-            for track in playandgo_engine.get_tracks(territory_id, start_time, end_time, track_mode):
+            else:
                 extract_track_data_h3(track, ls_tracks_info, ls_nearest_edges)
                 logger.info(f"Track {track_mode} {count} processed.")
                 count += 1
-
 
     start_time_dt = datetime.fromisoformat(start_time)
     year = start_time_dt.strftime("%Y")
